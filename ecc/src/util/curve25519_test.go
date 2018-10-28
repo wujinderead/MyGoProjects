@@ -10,9 +10,9 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
-	//"crypto/sha512"
 	"bytes"
 	"ecc"
+	"crypto/sha512"
 )
 
 // curve25519
@@ -188,7 +188,7 @@ func TestConvertPoint(t *testing.T) {
 // ed25519 base_point  (bx, by=4/5)   *   secret_K  =  (?, Y)        Y: ed25519 public key
 // y = (u-1)/(u+1)
 // u = (1+y)/(1-y)
-/*func TestCurve25519AndEd25519Arithmetic(t *testing.T) {
+func TestCurve25519AndEd25519Arithmetic(t *testing.T) {
 	reader := rand.Reader
 	seed := make([]byte, ed25519.SeedSize)
 	n, err := reader.Read(seed)
@@ -230,7 +230,7 @@ func TestConvertPoint(t *testing.T) {
 	fmt.Printf("u   : %x\n", reverse(u.Bytes()))
 	fmt.Printf("u1  : %x\n", reverse(u1.Bytes()))
 	fmt.Println(bytes.Equal(pubs, reverse(y.Bytes())), bytes.Equal(rslt[:], reverse(u.Bytes())))
-}*/
+}
 
 func TestX25519Rfc7748(t *testing.T) {
 	scala1, _ := hex.DecodeString("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a")
