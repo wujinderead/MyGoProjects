@@ -1,9 +1,24 @@
 package util
 
 import (
+	"encoding/hex"
 	"fmt"
+	"reflect"
 	"testing"
 	"unsafe"
+)
+
+var (
+	xia_ke_xing = "赵客缦胡缨，吴钩霜雪明，银鞍照白马，飒沓如流星。" +
+		"十步杀一人，千里不留行，事了拂衣去，深藏身与名。" +
+		"闲过信陵饮，脱剑膝前横，将炙啖朱亥，持觞劝侯嬴。" +
+		"三杯吐然诺，五岳倒为轻，眼花耳热后，意气素霓生。" +
+		"救赵挥金槌，邯郸先震惊，千秋二壮士，烜赫大梁城。" +
+		"纵死侠骨香，不惭世上英，谁能书阁下，白首太玄经。"
+
+	ascii = `1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./ZXCVBNM<>?ASDFGHJKL:"QWERTYUIOP{}|!@#$%^&*()_+`
+
+	single = "a"
 )
 
 func Test_align1(t *testing.T) {
@@ -108,4 +123,197 @@ func Test_align2(t *testing.T) {
 		s := ds{&a, [2]uint8{1, 2}}
 		fmt.Println(unsafe.Sizeof(s))
 	}()
+}
+
+// on this darwin 64-bit machine
+// the unsafe.Size() of any pointer is 8 (64-bit)
+// the unsafe.Size() of any string is 16 (128-bit)
+// the unsafe.Size() of any array reference is 24 (192-bit)
+func testString(t *testing.T, str string) {
+	runes := []rune(str)
+	point := &str
+	byter := []byte(str)
+	fmt.Println(unsafe.Sizeof(str))
+	fmt.Println(unsafe.Sizeof(runes))
+	fmt.Println(unsafe.Sizeof(point))
+	fmt.Println(unsafe.Sizeof(byter))
+
+	fmt.Printf("%d %d %d\n", len(str), len(byter), len(runes))
+}
+
+func TestInt8(t *testing.T) {
+	var a int8 = 53
+	var p = &a
+	var arr1 = []int8{12, -7, 87}
+	var arr2 = []int8{12, -7, 87, 12, -7, 87, 12, -7, 87, 12, -7, 87}
+	fmt.Println(unsafe.Sizeof(a))
+	fmt.Println(unsafe.Sizeof(p))
+	fmt.Println(unsafe.Sizeof(arr1))
+	fmt.Println(unsafe.Sizeof(arr2))
+}
+
+func TestInt16(t *testing.T) {
+	var a int16 = 53
+	var p = &a
+	var arr1 = []int16{12, -7, 87}
+	var arr2 = []int16{12, -7, 87, 12, -7, 87, 12, -7, 87, 12, -7, 87}
+	fmt.Println(unsafe.Sizeof(a))
+	fmt.Println(unsafe.Sizeof(p))
+	fmt.Println(unsafe.Sizeof(arr1))
+	fmt.Println(unsafe.Sizeof(arr2))
+}
+
+func TestFloat32(t *testing.T) {
+	var a float32 = 53
+	var p = &a
+	var arr1 = []float32{12.7, -7.9, 8.78}
+	var arr2 = []float32{12, -7, 87, 12, -7, 87, 12, -7, 87, 12, -7, 87}
+	fmt.Println(unsafe.Sizeof(a))
+	fmt.Println(unsafe.Sizeof(p))
+	fmt.Println(unsafe.Sizeof(arr1))
+	fmt.Println(unsafe.Sizeof(arr2))
+}
+
+func TestFloat64(t *testing.T) {
+	var a float64 = 53
+	var p = &a
+	var arr1 = []float64{12.7, -7.9, 8.78}
+	var arr2 = []float64{12, -7, 87, 12, -7, 87, 12, -7, 87, 12, -7, 87}
+	fmt.Println(unsafe.Sizeof(a))
+	fmt.Println(unsafe.Sizeof(p))
+	fmt.Println(unsafe.Sizeof(arr1))
+	fmt.Println(unsafe.Sizeof(arr2))
+}
+
+func TestComplex64(t *testing.T) {
+	var a complex64 = complex(4.5, 7.8)
+	var p = &a
+	var arr1 = []complex64{a, a, a}
+	var arr2 = []complex64{a, a, a, a, a, a, a, a, a}
+	fmt.Println(unsafe.Sizeof(a))
+	fmt.Println(unsafe.Sizeof(p))
+	fmt.Println(unsafe.Sizeof(arr1))
+	fmt.Println(unsafe.Sizeof(arr2))
+}
+
+func TestComplex128(t *testing.T) {
+	var a complex128 = complex(4.5, 7.8)
+	var p = &a
+	var arr1 = []complex128{a, a, a}
+	var arr2 = []complex128{a, a, a, a, a, a, a, a, a}
+	fmt.Println(unsafe.Sizeof(a))
+	fmt.Println(unsafe.Sizeof(p))
+	fmt.Println(unsafe.Sizeof(arr1))
+	fmt.Println(unsafe.Sizeof(arr2))
+}
+
+func TestString(t *testing.T) {
+	testString(t, xia_ke_xing)
+	testString(t, ascii)
+	testString(t, single)
+}
+
+func TestStringModify(t *testing.T) {
+	runes := []rune(xia_ke_xing)
+	//point := &xia_ke_xing
+	byter := []byte(xia_ke_xing)
+
+	// can we modify string through modifying the underline array?
+	fmt.Println(hex.EncodeToString(byter))
+	for _, v := range runes {
+		fmt.Print(v, " ", string(v), " ")
+		fmt.Printf("%x\n", v)
+	}
+}
+
+// rune is int32 actually
+// the string in golang is underlyingly stored as UTF-8
+// when a utf-8 character is converted to rune, the rune is the unicode of the character
+func TestRuneUtf8(t *testing.T) {
+	var h string = "赵跷"                       // actual chinese
+	var a string = "\xe8\xb5\xb5\xe8\xb7\xb7" // bytes representation
+	var aa string = "\u8d75\u8df7"            // unicode representation
+	var b0 rune = []rune(a)[0]                // 8d75
+	var b1 rune = []rune(a)[1]                // 8df7
+	fmt.Printf("%s %x\n", h, []byte(h))
+	fmt.Printf("%s %x\n", a, []byte(a))
+	fmt.Printf("%s %x\n", aa, []byte(aa))
+	fmt.Printf("%d %x %s\n", b0, b0, string(b0))
+	fmt.Println(unsafe.Sizeof(b0))
+	fmt.Printf("%d %x %s\n", b1, b1, string(b1))
+
+	// can not modify a string by converting it to []rune, string is const
+	runes := []rune(h)
+	runes[0], runes[1] = runes[1], runes[0]
+	fmt.Println(h, " ", string(runes))
+	runes[1] = []rune("\u8df4")[0]
+	fmt.Println(h, " ", string(runes))
+
+	// can not modify a string by converting it to []byte, string is const
+	byter := []byte(h)
+	byter[2] = 0xa4
+	fmt.Println(h, " ", string(byter))
+}
+
+// why the unsafe.Sizeof(string) is 16, what exactly is the meaning of the 16-bytes
+func TestStringUnsafe(t *testing.T) {
+	var h string = "赵跷" // actual chinese
+	//var a string = "\xe8\xb5\xb5\xe8\xb7\xb7"  // bytes representation
+	var a string = "\xe8\xb5\xb5\xe8\xb7\xb7" // bytes representation
+	//var aa string = "\u8d75\u8df7"  // unicode representation
+
+	p := &h
+	fmt.Println(p, " ", reflect.TypeOf(p))
+
+	for i := 0; i < int(unsafe.Sizeof(h)); i++ {
+		byte1 := *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + uintptr(i)))
+		fmt.Printf("%x\n", byte1)
+	}
+
+	fmt.Println(a, " ", &a, " ", reflect.TypeOf(&a))
+	for i := 0; i < int(unsafe.Sizeof(xia_ke_xing)); i++ {
+		byte1 := *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&xia_ke_xing)) + uintptr(i)))
+		fmt.Printf("%x\n", byte1)
+	}
+}
+
+func TestBytesUnsafe(t *testing.T) {
+	byter := []byte(xia_ke_xing)
+	base_p := &byter[0]
+	for i := 0; i < len(byter); i++ {
+		byte_p := (*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(base_p)) + uintptr(i)))
+		if i%3 == 2 {
+			*byte_p = *byte_p + 1
+		}
+	}
+	fmt.Printf("%x\n", byter)
+	fmt.Println(string(byter))
+}
+
+type arrayStr struct {
+	a string
+	b []int8
+	c []float64
+}
+
+// in this mahine, the size of string is always 16, the size of any array is always 24
+func TestArraySize(t *testing.T) {
+	a := arrayStr{
+		"hahahahahahhahahah",
+		[]int8{1, 2 ,3 ,4 ,5, 6, 7},
+		[]float64{0.1, 0.2, 0.432, 56.123, 456.4, 7.8, 8.4, 13.8},
+	}
+	b := arrayStr{
+		"a",
+		[]int8{1},
+		[]float64{0.1},
+	}
+	c := arrayStr{
+		"",
+		[]int8{},
+		[]float64{},
+	}
+	fmt.Println(unsafe.Sizeof(a), unsafe.Sizeof(a.a), unsafe.Sizeof(a.b), unsafe.Sizeof(a.c))
+	fmt.Println(unsafe.Sizeof(b), unsafe.Sizeof(b.a), unsafe.Sizeof(b.b), unsafe.Sizeof(b.c))
+	fmt.Println(unsafe.Sizeof(c), unsafe.Sizeof(c.a), unsafe.Sizeof(c.b), unsafe.Sizeof(c.c))
 }
