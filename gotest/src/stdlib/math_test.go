@@ -1,4 +1,4 @@
-package main
+package stdlib
 
 import (
 	"encoding/binary"
@@ -7,15 +7,10 @@ import (
 	"reflect"
 	"strconv"
 	"unsafe"
+	"testing"
 )
 
-func main() {
-	//testCongruent1()
-	//testMaxMin()
-	//bigLittle()
-}
-
-func testCongruent() {
+func TestCongruent(t *testing.T) {
 	BI := new(big.Int)
 	a1, _ := new(big.Int).SetString("6803298487826435051217540", 10)
 	b1, _ := new(big.Int).SetString("411340519227716149383203", 10)
@@ -45,7 +40,7 @@ func testCongruent() {
 	fmt.Println(left.Cmp(right))
 }
 
-func testCongruent1() {
+func TestCongruent1(t *testing.T) {
 	BI := new(big.Int)
 	a1, _ := new(big.Int).SetString("80155", 10)
 	b1, _ := new(big.Int).SetString("20748", 10)
@@ -76,7 +71,7 @@ func testCongruent1() {
 	fmt.Println(left.Cmp(new(big.Int).SetInt64(int64(^uint64(0) >> 1))))
 }
 
-func testMaxMin() {
+func TestMaxMin(t *testing.T) {
 	uint8_max := ^uint8(0)
 	uint8_min := uint8(0)
 	int8_max := int8(^uint8(0) >> 1)
@@ -148,7 +143,7 @@ func testMaxMin() {
 	}
 }
 
-func bigLittle() {
+func TestBigLittle(t *testing.T) {
 	bytea := []byte{0x28, 0xa7}
 	a := binary.BigEndian.Uint16(bytea)
 	b := binary.LittleEndian.Uint16(bytea)
