@@ -13,7 +13,10 @@ import (
 	"math/big"
 	"strings"
 	"testing"
-	)
+	"crypto/sha512"
+	"golang.org/x/crypto/curve25519"
+	"util"
+		)
 
 func TestParsePrivateKey(t *testing.T) {
 	byter, err := ioutil.ReadFile("/home/xzy/.ssh/id_rsa")
@@ -66,7 +69,20 @@ func TestParseRawPrivateKey(t *testing.T) {
 		if sshKey, ok := privKey.(*ed25519.PrivateKey); ok {
 			fmt.Println("priv: ", hex.EncodeToString([]byte(*sshKey)))
 			fmt.Println("pub : ", hex.EncodeToString([]byte(sshKey.Public().(ed25519.PublicKey))))
-			sshKey.Public()
+			// the private key of ed25519 is actually a seed
+			seed := []byte(*sshKey)[:ed25519.SeedSize]
+			dgst := sha512.Sum512(seed)
+			var mtpub, multiplier [32]byte
+			copy(multiplier[:], dgst[:])
+			curve25519.ScalarBaseMult(&mtpub, &multiplier)
+			reverse := func(arr []byte) []byte {
+				for i, j:= 0, len(arr)-1; i<j; i, j = i+1, j-1 {
+					arr[i], arr[j] = arr[j], arr[i]
+				}
+				return arr
+			}
+			edpub := util.Curve25519XToEd25519Y(new(big.Int).SetBytes(reverse(mtpub[:])));
+			fmt.Printf("edy :  %x\n", reverse(edpub.Bytes()))
 		}
 		if ecKey, ok := privKey.(*ecdsa.PrivateKey); ok {
 			fmt.Println("curve: ", ecKey.Curve.Params().Name)
@@ -80,7 +96,7 @@ func TestParseRawPrivateKey(t *testing.T) {
 	}
 }
 
-func Test(t *testing.T) {
+func TestParsePub(t *testing.T) {
 	for _, file := range []string{
 		"/home/xzy/.ssh/id_ed25519.pub",
 		"/home/xzy/.ssh/id_ecdsa.pub",
@@ -112,7 +128,7 @@ func Test(t *testing.T) {
 	}
 }
 
-func Test1(t *testing.T) {
+func TestParsePubBase64(t *testing.T) {
 	str := "AAAAC3NzaC1lZDI1NTE5AAAAIORgUkd8gFVXaJLIEryDOaZlva3q7h0Zn9Yr6Xm46h0x"
 	byter, err := base64.StdEncoding.DecodeString(str)
 	if err != nil {
@@ -134,4 +150,20 @@ func Test1(t *testing.T) {
 	fmt.Println(hex.EncodeToString([]byte("ecdsa-sha2-nistp256")))
 	byterr, err := hex.DecodeString("6e69737470323536")
 	fmt.Println(string(byterr))
+}
+
+func TestParsePubBase641(t *testing.T) {
+	str := "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBN19Wr/teJ1PArr+VeLmhusv+gEaE9jcEDYlptIR/+XE5joPoKlmlrLO66iazPBk5RTzYJpZPWNprldmq/RueGw="
+	byter, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		fmt.Println("base64 decode err: ", err.Error())
+	}
+	pub, err := ssh.ParsePublicKey(byter)
+	if err != nil {
+		fmt.Println("parse public key err: ", err.Error())
+	}
+	fmt.Println(pub.Type())
+	fmt.Println(hex.EncodeToString(pub.Marshal()))
+	fp := ssh.FingerprintSHA256(pub)
+	fmt.Println(fp)
 }
