@@ -300,7 +300,7 @@ type arrayStr struct {
 func TestArraySize(t *testing.T) {
 	a := arrayStr{
 		"hahahahahahhahahah",
-		[]int8{1, 2 ,3 ,4 ,5, 6, 7},
+		[]int8{1, 2, 3, 4, 5, 6, 7},
 		[]float64{0.1, 0.2, 0.432, 56.123, 456.4, 7.8, 8.4, 13.8},
 	}
 	b := arrayStr{
@@ -316,4 +316,34 @@ func TestArraySize(t *testing.T) {
 	fmt.Println(unsafe.Sizeof(a), unsafe.Sizeof(a.a), unsafe.Sizeof(a.b), unsafe.Sizeof(a.c))
 	fmt.Println(unsafe.Sizeof(b), unsafe.Sizeof(b.a), unsafe.Sizeof(b.b), unsafe.Sizeof(b.c))
 	fmt.Println(unsafe.Sizeof(c), unsafe.Sizeof(c.a), unsafe.Sizeof(c.b), unsafe.Sizeof(c.c))
+}
+
+func TestUniCode(t *testing.T) {
+	// 𐌡  unicode 66337 (U+10321) utf8  f0908ca1
+	// ໔          3796  (U+0ED4)  utf8  e0bb94
+	// 加         21152 (U+52A0)  utf8   e58aa0
+	// ñ          241   (U+00F1)  utf8   c3b1
+	// A          65    (U+0041)  utf8   41
+	for _, a := range []rune{66337, 3796, 21152, 241, 65} {
+		s := string(a)
+		fmt.Println(s, hex.EncodeToString([]byte(s)))
+	}
+	var s string = "\xf0\x90\x8c\xa1\xe0\xbb\x94\xe5\x8a\xa0\xc3\xb1\x41"
+	fmt.Println(s, len(s))
+
+	a := []rune{'\u2070', '\u00b9', '\u00b2', '\u00b3', '\u2074', '\u2075', '\u2076', '\u2077', '\u2078', '\u2079'}
+	fmt.Println(a)
+	for _, r := range a {
+		fmt.Println("a" + string(r))
+	}
+
+	// len(string) is the underlying utf8 bytes len
+	b := "\xf0\x90\x8c\xa1\xe0\xbb\x94\xe5\x8a\xa0\xc3\xb1\x41" // "𐌡໔加ñA"
+	// when str is transferred to []rune, the number is the number of characters
+	c := []rune(b)
+	fmt.Println(b, len(b), len(c)) // 13, 5
+	for _, ch := range b {         // range string is to range []rune
+		fmt.Println(ch)
+	}
+
 }
