@@ -103,7 +103,7 @@ func TestParams(t *testing.T) {
 func TestParams_Prime(t *testing.T) {
 	for _, name := range names {
 		spec := EcCurveSpecs[name]
-		if !strings.Contains(spec.Desc, "prime") {
+		if spec.Curve.head.fieldType != NID_X9_62_prime_field {
 			continue // skip non prime field curve
 		}
 		curve := spec.Curve
@@ -132,7 +132,7 @@ func TestParams_Prime(t *testing.T) {
 func TestParams_Binary(t *testing.T) {
 	for _, name := range names {
 		spec := EcCurveSpecs[name]
-		if !strings.Contains(spec.Desc, "binary") {
+		if spec.Curve.head.fieldType != NID_X9_62_prime_field {
 			continue // skip non binary field curve
 		}
 		curve := spec.Curve

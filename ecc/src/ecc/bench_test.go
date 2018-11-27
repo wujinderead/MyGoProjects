@@ -11,7 +11,7 @@ import (
 
 func BenchmarkEcCurve_ScalaMult(b *testing.B) {
 	byter, _ := hex.DecodeString("b76ab22849759e9d31f1b656923c8dfef45e7d82fd82b383ba501f29b528c3d1")
-	curve := _EC_X9_62_PRIME_256V1
+	curve, _ := GetFpCurve("prime256v1")
 	p256 := elliptic.P256()
 	point := &EcPoint{p256.Params().Gx, p256.Params().Gx}
 	for i := 0; i < b.N; i++ {
@@ -45,7 +45,7 @@ func BenchmarkEdCurve_ScalaMultBaseProjective(b *testing.B) {
 }
 
 func TestEquationEc(t *testing.T) {
-	curve := _EC_X9_62_PRIME_256V1
+	curve, _ := GetFpCurve("prime256v1")
 	p256 := elliptic.P256()
 	byter := make([]byte, 32)
 	_, err := rand.Reader.Read(byter)
@@ -78,7 +78,7 @@ func TestEquationEd(t *testing.T) {
 }
 
 func TestEquationJava(t *testing.T) {
-	curve := _EC_SECG_PRIME_256K1
+	curve, _ := GetFpCurve("prime256v1")
 	s, _ := new(big.Int).SetString("27519130846651076635714601172252979491810019324250252554655444934306184823446", 10)
 	point := curve.ScalaMultBase(s.Bytes())
 	fmt.Println("X: ", point.X.String())

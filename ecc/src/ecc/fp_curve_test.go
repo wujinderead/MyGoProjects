@@ -30,7 +30,7 @@ func TestConst(t *testing.T) {
 }
 
 func TestEcCurve_Add(t *testing.T) {
-	curve := GetEcCurve("secp224r1")
+	curve, _ := GetFpCurve("secp224r1")
 	x1, _ := new(big.Int).SetString("19277929113566293071110308034699488026831934219452440156649784352033", 10)
 	y1, _ := new(big.Int).SetString("19926808758034470970197974370888749184205991990603949537637343198772", 10)
 	t.Log(curve.X.Cmp(x1) == 0, curve.Y.Cmp(y1) == 0)
@@ -79,7 +79,7 @@ func TestEcCurve_Add(t *testing.T) {
 }
 
 func TestEcCurve_ScalaMult(t *testing.T) {
-	curve := GetEcCurve("secp521r1")
+	curve, _ := GetFpCurve("secp521r1")
 	cp := elliptic.P521()
 	t.Logf("%x %x %x", cp.Params().Gx.Bytes(), cp.Params().Gy.Bytes(), cp.Params().P.Bytes())
 	t.Logf("%x %x %x", curve.X.Bytes(), curve.Y.Bytes(), curve.P.Bytes())
