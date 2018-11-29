@@ -16,10 +16,12 @@ import (
 	"crypto/sha512"
 	"golang.org/x/crypto/curve25519"
 	"util"
-		)
+	"crypto/rand"
+	"golang.org/x/crypto/ssh/knownhosts"
+)
 
 func TestParsePrivateKey(t *testing.T) {
-	byter, err := ioutil.ReadFile("/home/xzy/.ssh/id_rsa")
+	byter, err := ioutil.ReadFile("/home/lgq/.ssh/id_ed25519")
 	if err != nil {
 		fmt.Println("read file err: ", err.Error())
 		t.FailNow()
@@ -36,9 +38,9 @@ func TestParsePrivateKey(t *testing.T) {
 
 func TestParseRawPrivateKey(t *testing.T) {
 	for _, file := range []string{
-		"/home/xzy/.ssh/id_rsa",
-		"/home/xzy/.ssh/id_ed25519",
-		"/home/xzy/.ssh/id_ecdsa"} {
+		"/home/lgq/.ssh/id_rsa",
+		"/home/lgq/.ssh/id_ed25519",
+		"/home/lgq/.ssh/id_ecdsa"} {
 		byter, err := ioutil.ReadFile(file)
 		if err != nil {
 			fmt.Println("read file err: ", err.Error())
@@ -51,7 +53,9 @@ func TestParseRawPrivateKey(t *testing.T) {
 			fmt.Println("parse private key err: ", err.Error())
 			t.FailNow()
 		}
-		if rsaPrivKey, ok := privKey.(*rsa.PrivateKey); ok {
+		switch privKey.(type) {
+		case *rsa.PrivateKey:
+			rsaPrivKey := privKey.(*rsa.PrivateKey)
 			fmt.Println("D: ", hex.EncodeToString(rsaPrivKey.D.Bytes()))
 			fmt.Println("N: ", hex.EncodeToString(rsaPrivKey.N.Bytes()))
 			fmt.Println("p: ", hex.EncodeToString(rsaPrivKey.Primes[0].Bytes()))
@@ -65,8 +69,8 @@ func TestParseRawPrivateKey(t *testing.T) {
 			lambda := new(big.Int).Mul(p_1, q_1)
 			lambda.ModInverse(new(big.Int).SetInt64(65537), lambda)
 			fmt.Println(lambda.Cmp(rsaPrivKey.D))
-		}
-		if sshKey, ok := privKey.(*ed25519.PrivateKey); ok {
+		case *ed25519.PrivateKey:
+			sshKey := privKey.(*ed25519.PrivateKey)
 			fmt.Println("priv: ", hex.EncodeToString([]byte(*sshKey)))
 			fmt.Println("pub : ", hex.EncodeToString([]byte(sshKey.Public().(ed25519.PublicKey))))
 			// the private key of ed25519 is actually a seed
@@ -83,8 +87,8 @@ func TestParseRawPrivateKey(t *testing.T) {
 			}
 			edpub := util.Curve25519XToEd25519Y(new(big.Int).SetBytes(reverse(mtpub[:])));
 			fmt.Printf("edy :  %x\n", reverse(edpub.Bytes()))
-		}
-		if ecKey, ok := privKey.(*ecdsa.PrivateKey); ok {
+		case *ecdsa.PrivateKey:
+			ecKey := privKey.(*ecdsa.PrivateKey)
 			fmt.Println("curve: ", ecKey.Curve.Params().Name)
 			fmt.Println("D: ", hex.EncodeToString(ecKey.D.Bytes()))
 			fmt.Println("X: ", hex.EncodeToString(ecKey.X.Bytes()))
@@ -98,9 +102,9 @@ func TestParseRawPrivateKey(t *testing.T) {
 
 func TestParsePub(t *testing.T) {
 	for _, file := range []string{
-		"/home/xzy/.ssh/id_ed25519.pub",
-		"/home/xzy/.ssh/id_ecdsa.pub",
-		"/home/xzy/.ssh/id_rsa.pub"} {
+		"/home/lgq/.ssh/id_ed25519.pub",
+		"/home/lgq/.ssh/id_ecdsa.pub",
+		"/home/lgq/.ssh/id_rsa.pub"} {
 		byter, err := ioutil.ReadFile(file)
 		if err != nil {
 			fmt.Println("read file err: ", err.Error())
@@ -125,6 +129,10 @@ func TestParsePub(t *testing.T) {
 		fmt.Println("type: ", pubKey.Type())
 		fmt.Println("pubkey marshal: ", hex.EncodeToString(pubKey.Marshal()))
 		fmt.Println()
+
+		// fingerprint is to sha256 the public key marshal, then base64 (RawStdEncoding) the hash
+		fingerprint := ssh.FingerprintSHA256(pubKey)
+		fmt.Println("finger printer: ", fingerprint)
 	}
 }
 
@@ -166,4 +174,44 @@ func TestParsePubBase641(t *testing.T) {
 	fmt.Println(hex.EncodeToString(pub.Marshal()))
 	fp := ssh.FingerprintSHA256(pub)
 	fmt.Println(fp)
+}
+
+func TestParseAuthorizedKey(t *testing.T) {
+	str := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIORgUkd8gFVXaJLIEryDOaZlva3q7h0Zn9Yr6Xm46h0x xzy@node0"
+	pub, comment, opts, rest, err := ssh.ParseAuthorizedKey([]byte(str))
+	if err != nil {
+		fmt.Println("base64 decode err: ", err.Error())
+		t.FailNow()
+	}
+	fmt.Println("pub: ", pub.Type())
+	fmt.Println("comment: ", comment)
+	fmt.Println("opts: ", opts)
+	fmt.Println("rest: ", rest)
+}
+
+func TestSignAndVerify25519(t *testing.T) {
+	msg := "A quick brown fox jumps over the lazy dog."
+	pub1, priv1, _ := ed25519.GenerateKey(rand.Reader)
+	pub2, priv2, _ := ed25519.GenerateKey(rand.Reader)
+	sshPub1, _ := ssh.NewPublicKey(pub1)
+	sshPub2, _ := ssh.NewPublicKey(pub2)
+	signer1, _ := ssh.NewSignerFromKey(priv1)
+	signer2, _ := ssh.NewSignerFromKey(priv2)
+	signature1, _ := signer1.Sign(rand.Reader, []byte(msg))
+	signature2, _ := signer2.Sign(rand.Reader, []byte(msg))
+	fmt.Printf("signture1 format: %s, blob: %s\n", signature1.Format, hex.EncodeToString(signature1.Blob))
+	fmt.Printf("signture2 format: %s, blob: %s\n", signature2.Format, hex.EncodeToString(signature2.Blob))
+	fmt.Println(sshPub1.Verify([]byte(msg), signature1))
+	fmt.Println(sshPub1.Verify([]byte(msg), signature2))
+	fmt.Println(sshPub2.Verify([]byte(msg), signature1))
+	fmt.Println(sshPub2.Verify([]byte(msg), signature2))
+}
+
+func TestHashHostname(t *testing.T) {
+	h135 := knownhosts.HashHostname("xzy@10.19.138.135")
+	h181 := knownhosts.HashHostname("xh@10.19.138.181")
+	h186 := knownhosts.HashHostname("taodd@10.19.138.186")
+	fmt.Println("h135: ", h135)
+	fmt.Println("h181: ", h181)
+	fmt.Println("h186: ", h186)
 }
