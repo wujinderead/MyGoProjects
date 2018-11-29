@@ -1,5 +1,10 @@
 package ecc
 
+import (
+	"errors"
+	"fmt"
+)
+
 const (
 	SN_secp112r1               = "secp112r1"
 	SN_secp112r2               = "secp112r2"
@@ -284,10 +289,40 @@ func init() {
 		"RFC 5639 curve over a 512 bit prime field"}
 }
 
-func GetEcCurveSpec(name string) *EcCurveSpec {
-	return EcCurveSpecs[name]
+func GetEcCurveSpec(name string) (*EcCurveSpec, error) {
+	spec := EcCurveSpecs[name]
+	if spec == nil {
+		return nil, errors.New(fmt.Sprintf("curve '%s' not exists", name))
+	}
+	return spec, nil
 }
 
-func GetEcCurve(name string) *EcCurve {
-	return EcCurveSpecs[name].Curve
+func GetEcCurve(name string) (*EcCurve, error) {
+	spec := EcCurveSpecs[name]
+	if spec == nil {
+		return nil, errors.New(fmt.Sprintf("curve '%s' not exists", name))
+	}
+	return spec.Curve, nil
+}
+
+func GetFpCurve(name string) (*FpCurve, error) {
+	spec := EcCurveSpecs[name]
+	if spec == nil {
+		return nil, errors.New(fmt.Sprintf("curve '%s' not exists", name))
+	}
+	if spec.Curve.head.fieldType != NID_X9_62_prime_field {
+		return nil, errors.New(fmt.Sprintf("curve '%s' is not for prime field", name))
+	}
+	return (*FpCurve)(spec.Curve), nil
+}
+
+func GetF2mCurve(name string) (*F2mCurve, error) {
+	spec := EcCurveSpecs[name]
+	if spec == nil {
+		return nil, errors.New(fmt.Sprintf("curve '%s' not exists", name))
+	}
+	if spec.Curve.head.fieldType != NID_X9_62_characteristic_two_field {
+		return nil, errors.New(fmt.Sprintf("curve '%s' is not for binary field", name))
+	}
+	return (*F2mCurve)(spec.Curve), nil
 }

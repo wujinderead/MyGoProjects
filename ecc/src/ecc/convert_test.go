@@ -9,7 +9,7 @@ import (
 
 func TestReflect(t *testing.T) {
 	curve := Curve25519()
-	method, _ := reflect.TypeOf(curve).MethodByName("ToEdwardCurveForm1")
+	method, _ := reflect.TypeOf(curve).MethodByName("ToEdwardsCurveForm1")
 	results := method.Func.Call([]reflect.Value{reflect.ValueOf(curve), reflect.ValueOf(ONE)})
 	ed := results[0].Interface().(*EdCurve)
 	sq := results[1].Interface().(*big.Int)
