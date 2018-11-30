@@ -2,21 +2,18 @@ package ecc
 
 import (
 	"math/big"
-	)
+)
 
-// in this file, we implements elliptic curve arithmetic in projective coordinates when a=-3
-// aneg3 curve is elliptic curve y²=x³+ax+b with a=-3
-type Aneg3Curve FpCurve
-
-func (curve *Aneg3Curve) Add(p1, p2 *EcPoint) *EcPoint {
+// in this file, we implements short weierstrass elliptic curve arithmetic in projective coordinates
+func (curve *FpCurve) AddProjective(p1, p2 *EcPoint) *EcPoint {
 	x1, y1, x2, y2 := p1.X, p1.Y, p2.X, p2.Y
 	z1 := zForAffine(x1, y1)
 	z2 := zForAffine(x2, y2)
-	return (*FpCurve)(curve).affineFromProjective(curve.addProjective(x1, y1, z1, x2, y2, z2))
+	return curve.affineFromProjective(curve.addProjective(x1, y1, z1, x2, y2, z2))
 }
 
-// see https://hyperelliptic.org/EFD/g1p/auto-shortw-projective-3.html#addition-add-1998-cmo-2
-func (curve *Aneg3Curve) addProjective(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int, *big.Int, *big.Int) {
+// see https://hyperelliptic.org/EFD/g1p/auto-shortw-projective.html#addition-add-1998-cmo-2
+func (curve *FpCurve) addProjective(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int, *big.Int, *big.Int) {
 	x3, y3, z3 := new(big.Int), new(big.Int), new(big.Int)
 	if z1.Sign() == 0 {
 		x3.Set(x2)
@@ -72,19 +69,20 @@ func (curve *Aneg3Curve) addProjective(x1, y1, z1, x2, y2, z2 *big.Int) (*big.In
 	return x3, y3, z3
 }
 
-func (curve *Aneg3Curve) Double(point *EcPoint) *EcPoint {
+func (curve *FpCurve) DoubleProjective(point *EcPoint) *EcPoint {
 	x1, y1 := point.X, point.Y
 	z1 := zForAffine(x1, y1)
-	return (*FpCurve)(curve).affineFromProjective(curve.doubleProjective(x1, y1, z1))
+	return curve.affineFromProjective(curve.doubleProjective(x1, y1, z1))
 }
 
-// see https://hyperelliptic.org/EFD/g1p/auto-shortw-projective-3.html#doubling-dbl-2007-bl-2
-func (curve *Aneg3Curve) doubleProjective(x, y, z *big.Int) (*big.Int, *big.Int, *big.Int) {
-	tmp := new(big.Int).Sub(x, z)
-	w := new(big.Int).Add(x, z)
-	w.Mul(w, tmp)
-	tmp.Lsh(w, 1)
-	w.Add(w, tmp)                   // w = 3*(X1-Z1)*(X1+Z1)
+// see https://hyperelliptic.org/EFD/g1p/auto-shortw-projective.html#doubling-dbl-2007-bl
+func (curve *FpCurve) doubleProjective(x, y, z *big.Int) (*big.Int, *big.Int, *big.Int) {
+	XX := new(big.Int).Mul(x, x)    // XX = X1²
+	ZZ := new(big.Int).Mul(z, z)    // ZZ = Z1²
+	w := new(big.Int).Mul(curve.A, ZZ)
+	w.Add(w, XX)
+	w.Add(w, XX)
+	w.Add(w, XX)                    // w = a*ZZ+3*XX
 	s := new(big.Int).Mul(y, z)
 	s.Lsh(s, 1)                     // s = 2*Y1*Z1
 	ss := new(big.Int).Mul(s, s)    // ss = s*s
@@ -107,7 +105,7 @@ func (curve *Aneg3Curve) doubleProjective(x, y, z *big.Int) (*big.Int, *big.Int,
 	return x3, y3, sss
 }
 
-func (curve *Aneg3Curve) ScalaMult(point *EcPoint, k []byte) *EcPoint {
+func (curve *FpCurve) ScalaMultProjective(point *EcPoint, k []byte) *EcPoint {
 	Bx, By := point.X, point.Y
 	Bz := new(big.Int).SetInt64(1)
 	x, y, z := new(big.Int), new(big.Int), new(big.Int)
@@ -122,9 +120,21 @@ func (curve *Aneg3Curve) ScalaMult(point *EcPoint, k []byte) *EcPoint {
 		}
 	}
 
-	return (*FpCurve)(curve).affineFromProjective(x, y, z)
+	return curve.affineFromProjective(x, y, z)
 }
 
-func (curve *Aneg3Curve) ScalaMultBase(k []byte) *EcPoint {
-	return curve.ScalaMult(&EcPoint{curve.X, curve.Y}, k)
+func (curve *FpCurve) ScalaMultBaseProjective(k []byte) *EcPoint {
+	return curve.ScalaMultProjective(&EcPoint{curve.X, curve.Y}, k)
+}
+
+func (curve *FpCurve) affineFromProjective(x, y, z *big.Int) *EcPoint {
+	if z.Sign() == 0 {
+		return NewPoint()
+	}
+	zinv := new(big.Int).ModInverse(z, curve.P)
+	xOut := new(big.Int).Mul(x, zinv)
+	xOut.Mod(xOut, curve.P)
+	yOut := new(big.Int).Mul(y, zinv)
+	yOut.Mod(yOut, curve.P)
+	return &EcPoint{xOut, yOut}
 }

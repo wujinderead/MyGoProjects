@@ -1,20 +1,19 @@
 package ecc
 
-import "math/big"
+import (
+	"math/big"
+)
 
-// in this file, we implements koblitz curve arithmetic in Jacobian coordinates
-// koblitz curve is elliptic curve y²=x³+ax+b with a=0
-type KoblitzCurve FpCurve
-
-func (curve *KoblitzCurve) Add(p1, p2 *EcPoint) *EcPoint {
+// in this file, we implements short weierstrass elliptic curve arithmetic in Jacobian coordinates
+func (curve *FpCurve) AddJacobian(p1, p2 *EcPoint) *EcPoint {
 	x1, y1, x2, y2 := p1.X, p1.Y, p2.X, p2.Y
 	z1 := zForAffine(x1, y1)
 	z2 := zForAffine(x2, y2)
-	return (*FpCurve)(curve).affineFromJacobian(curve.addJacobian(x1, y1, z1, x2, y2, z2))
+	return curve.affineFromJacobian(curve.addJacobian(x1, y1, z1, x2, y2, z2))
 }
 
-// see https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-add-2007-bl
-func (curve *KoblitzCurve) addJacobian(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int, *big.Int, *big.Int) {
+// see https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html#addition-add-2007-bl
+func (curve *FpCurve) addJacobian(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int, *big.Int, *big.Int) {
 	x3, y3, z3 := new(big.Int), new(big.Int), new(big.Int)
 	if z1.Sign() == 0 {
 		x3.Set(x2)
@@ -89,43 +88,44 @@ func (curve *KoblitzCurve) addJacobian(x1, y1, z1, x2, y2, z2 *big.Int) (*big.In
 	return x3, y3, z3
 }
 
-func (curve *KoblitzCurve) Double(point *EcPoint) *EcPoint {
+func (curve *FpCurve) DoubleJacobian(point *EcPoint) *EcPoint {
 	x1, y1 := point.X, point.Y
 	z1 := zForAffine(x1, y1)
-	return (*FpCurve)(curve).affineFromJacobian(curve.doubleJacobian(x1, y1, z1))
+	return curve.affineFromJacobian(curve.doubleJacobian(x1, y1, z1))
 }
 
-// see https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l
-func (curve *KoblitzCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, *big.Int) {
-	A := new(big.Int).Mul(x, x)  // A = X1²
-	A.Mod(A, curve.P)
-	B := new(big.Int).Mul(y, y)  // B = Y1²
-	B.Mod(B, curve.P)
-	C := new(big.Int).Mul(B, B)  // C = B²
-	C.Mod(C, curve.P)
-	D := new(big.Int).Mul(x, B)
-	D.Lsh(D, 2)                  // D = 2*((X1+B)²-A-C) = 4*X1*B
-	E := new(big.Int).Lsh(A, 1)
-	E.Add(E, A)                  // E = 3*A
+// see https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html#doubling-dbl-2007-bl
+func (curve *FpCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, *big.Int) {
+	XX := new(big.Int).Mul(x, x)      // XX = X1²
+	YY := new(big.Int).Mul(y, y)      // YY = Y1²
+	ZZ := new(big.Int).Mul(z, z)      // ZZ = Z1²
+	YYYY := new(big.Int).Mul(YY, YY)  // YYYY = YY²
+	M := new(big.Int).Mul(ZZ, ZZ)
+	M.Mul(M, curve.A)
+	M.Add(M, XX)
+	M.Add(M, XX)
+	M.Add(M, XX)                      // M = 3*XX+a*ZZ²
+	S := new(big.Int).Mul(x, YY)
+	S.Lsh(S, 2)                       // S = 4*X1*YY
 
-	x3 := new(big.Int).Mul(E, E) // F = E²
-	x3.Sub(x3, D)
-	x3.Sub(x3, D)                // X3 = F-2*D
+	x3 := new(big.Int).Mul(M, M)
+	x3.Sub(x3, S)
+	x3.Sub(x3, S)                     // X3 = T = M²-2*S
 	x3.Mod(x3, curve.P)
 
-	y3 := new(big.Int).Sub(D, x3)
-	y3.Mul(y3, E)
-	c8 := new(big.Int).Lsh(C, 3)
-	y3.Sub(y3, c8)               // Y3 = E*(D-X3)-8*C
+	y3 := new(big.Int).Lsh(YYYY, 3)
+	S.Sub(S, x3)
+	S.Mul(S, M)
+	y3.Sub(S, y3)                     // Y3 = M*(S-T)-8*YYYY
 	y3.Mod(y3, curve.P)
 
-	z3 := new(big.Int).Lsh(y, 1)
-	z3.Mul(z3, z)                // Z3 = 2*Y1*Z1
+	z3 := new(big.Int).Mul(y, z)
+	z3.Lsh(z3, 1)                     // Z3 = 2*Y1*Z1
 	z3.Mod(z3, curve.P)
 	return x3, y3, z3
 }
 
-func (curve *KoblitzCurve) ScalaMult(point *EcPoint, k []byte) *EcPoint {
+func (curve *FpCurve) ScalaMultJacobian(point *EcPoint, k []byte) *EcPoint {
 	Bx, By := point.X, point.Y
 	Bz := new(big.Int).SetInt64(1)
 	x, y, z := new(big.Int), new(big.Int), new(big.Int)
@@ -140,9 +140,26 @@ func (curve *KoblitzCurve) ScalaMult(point *EcPoint, k []byte) *EcPoint {
 		}
 	}
 
-	return (*FpCurve)(curve).affineFromJacobian(x, y, z)
+	return curve.affineFromJacobian(x, y, z)
 }
 
-func (curve *KoblitzCurve) ScalaMultBase(k []byte) *EcPoint {
-	return curve.ScalaMult(&EcPoint{curve.X, curve.Y}, k)
+func (curve *FpCurve) ScalaMultBaseJacobian(k []byte) *EcPoint {
+	return curve.ScalaMultJacobian(&EcPoint{curve.X, curve.Y}, k)
+}
+
+
+func (curve *FpCurve) affineFromJacobian(x, y, z *big.Int) *EcPoint {
+	if z.Sign() == 0 {
+		return NewPoint()
+	}
+
+	zinv := new(big.Int).ModInverse(z, curve.P)
+	zinvsq := new(big.Int).Mul(zinv, zinv)
+
+	xOut := new(big.Int).Mul(x, zinvsq)
+	xOut.Mod(xOut, curve.P)
+	zinvsq.Mul(zinvsq, zinv)
+	yOut := new(big.Int).Mul(y, zinvsq)
+	yOut.Mod(yOut, curve.P)
+	return &EcPoint{xOut, yOut}
 }
