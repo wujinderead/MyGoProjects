@@ -94,6 +94,7 @@ var names = []string{
 }
 
 func TestParams(t *testing.T) {
+	initEc.Do(initEcCurves)
 	for _, name := range names {
 		spec := EcCurveSpecs[name]
 		fmt.Println(strings.Contains(spec.Desc, "prime"), strings.Contains(spec.Desc, "binary"), name, spec.Desc)
@@ -101,6 +102,7 @@ func TestParams(t *testing.T) {
 }
 
 func TestParams_Prime(t *testing.T) {
+	initEc.Do(initEcCurves)
 	for _, name := range names {
 		spec := EcCurveSpecs[name]
 		if spec.Curve.head.fieldType != NID_X9_62_prime_field {
@@ -121,8 +123,12 @@ func TestParams_Prime(t *testing.T) {
 			fmt.Printf("a=-3, b=%s, ", hex.EncodeToString(curve.B.Bytes()))
 			featured = true
 		}
+		if testPrimeBits(curve.P) {
+			fmt.Printf("p=%s, ", hex.EncodeToString(curve.P.Bytes()))
+			featured = true
+		}
 		if !featured {
-			fmt.Println("other, ", name, hex.EncodeToString(curve.A.Bytes()), hex.EncodeToString(curve.P.Bytes()))
+			fmt.Println("other, ", name)
 		} else {
 			fmt.Println(name)
 		}
@@ -130,6 +136,7 @@ func TestParams_Prime(t *testing.T) {
 }
 
 func TestParams_Binary(t *testing.T) {
+	initEc.Do(initEcCurves)
 	for _, name := range names {
 		spec := EcCurveSpecs[name]
 		if spec.Curve.head.fieldType != NID_X9_62_prime_field {
@@ -154,6 +161,7 @@ func TestParams_Binary(t *testing.T) {
 }
 
 func TestParams_BinaryFieldP(t *testing.T) {
+	initEc.Do(initEcCurves)
 	upper := []rune{8304, 185, 178, 179, 8308, 8309, 8310, 8311, 8312, 8313}
 	for _, name := range names {
 		spec := EcCurveSpecs[name]
@@ -179,5 +187,19 @@ func TestParams_BinaryFieldP(t *testing.T) {
 			}
 		}
 		fmt.Println()
+	}
+}
+
+func testPrimeBits(p *big.Int) bool {
+	count := 0
+	for i:=0; i<p.BitLen(); i++ {
+		if p.Bit(i) == 1 {
+			count++
+		}
+	}
+	if float32(count)/float32(p.BitLen()) > 0.8 {
+		return true
+	} else {
+		return false
 	}
 }

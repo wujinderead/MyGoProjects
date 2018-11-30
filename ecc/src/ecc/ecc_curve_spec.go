@@ -3,6 +3,8 @@ package ecc
 import (
 	"errors"
 	"fmt"
+	"math/big"
+	"sync"
 )
 
 const (
@@ -95,9 +97,15 @@ type EcCurveSpec struct {
 	Desc  string
 }
 
+var initEc sync.Once
 var EcCurveSpecs = make(map[string]*EcCurveSpec)
+var FpCurveNames = make([]string, 0)
+var F2mCurveNames = make([]string, 0)
+var Aneg3CurveNames = make([]string, 0)  // Fp curve with a=-3
+var KoblitzCurveNames = make([]string, 0) // Fp curve with a=0
+var TrivialCurveNames = make([]string, 0) // Fp curve with no special parameters
 
-func init() {
+func initEcCurves() {
 	EcCurveSpecs[SN_secp112r1] = &EcCurveSpec{SN_secp112r1, _EC_SECG_PRIME_112R1,
 		"SECG/WTLS curve over a 112 bit prime field"}
 	EcCurveSpecs[SN_secp112r2] = &EcCurveSpec{SN_secp112r2, _EC_SECG_PRIME_112R2,
@@ -287,9 +295,30 @@ func init() {
 		"RFC 5639 curve over a 512 bit prime field"}
 	EcCurveSpecs[SN_brainpoolP512t1] = &EcCurveSpec{SN_brainpoolP512t1, _EC_brainpoolP512t1,
 		"RFC 5639 curve over a 512 bit prime field"}
+
+	for name, curve := range EcCurveSpecs {
+		three := new(big.Int).SetInt64(3)
+		if curve.Curve.head.fieldType == NID_X9_62_prime_field {
+			FpCurveNames = append(FpCurveNames, name)
+			if new(big.Int).Add(curve.Curve.A, three).Cmp(curve.Curve.P) == 0 {
+				Aneg3CurveNames = append(Aneg3CurveNames, name)
+				continue
+			}
+			if curve.Curve.A.Cmp(Zero) == 0 {
+				KoblitzCurveNames = append(KoblitzCurveNames, name)
+				continue
+			}
+			TrivialCurveNames = append(TrivialCurveNames, name)
+		}
+
+		if curve.Curve.head.fieldType == NID_X9_62_characteristic_two_field {
+			F2mCurveNames = append(F2mCurveNames, name)
+		}
+ 	}
 }
 
 func GetEcCurveSpec(name string) (*EcCurveSpec, error) {
+	initEc.Do(initEcCurves)
 	spec := EcCurveSpecs[name]
 	if spec == nil {
 		return nil, errors.New(fmt.Sprintf("curve '%s' not exists", name))
@@ -298,6 +327,7 @@ func GetEcCurveSpec(name string) (*EcCurveSpec, error) {
 }
 
 func GetEcCurve(name string) (*EcCurve, error) {
+	initEc.Do(initEcCurves)
 	spec := EcCurveSpecs[name]
 	if spec == nil {
 		return nil, errors.New(fmt.Sprintf("curve '%s' not exists", name))
@@ -306,6 +336,7 @@ func GetEcCurve(name string) (*EcCurve, error) {
 }
 
 func GetFpCurve(name string) (*FpCurve, error) {
+	initEc.Do(initEcCurves)
 	spec := EcCurveSpecs[name]
 	if spec == nil {
 		return nil, errors.New(fmt.Sprintf("curve '%s' not exists", name))
@@ -317,6 +348,7 @@ func GetFpCurve(name string) (*FpCurve, error) {
 }
 
 func GetF2mCurve(name string) (*F2mCurve, error) {
+	initEc.Do(initEcCurves)
 	spec := EcCurveSpecs[name]
 	if spec == nil {
 		return nil, errors.New(fmt.Sprintf("curve '%s' not exists", name))

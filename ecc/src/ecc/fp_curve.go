@@ -87,3 +87,31 @@ func (curve *FpCurve) ScalaMult(p *EcPoint, k []byte) *EcPoint {
 func (curve *FpCurve) ScalaMultBase(k []byte) *EcPoint {
 	return curve.ScalaMult(&EcPoint{curve.X, curve.Y}, k)
 }
+
+func (curve *FpCurve) affineFromProjective(x, y, z *big.Int) *EcPoint {
+	if z.Sign() == 0 {
+		return NewPoint()
+	}
+	zinv := new(big.Int).ModInverse(z, curve.P)
+	xOut := new(big.Int).Mul(x, zinv)
+	xOut.Mod(xOut, curve.P)
+	yOut := new(big.Int).Mul(y, zinv)
+	yOut.Mod(yOut, curve.P)
+	return &EcPoint{xOut, yOut}
+}
+
+func (curve *FpCurve) affineFromJacobian(x, y, z *big.Int) *EcPoint {
+	if z.Sign() == 0 {
+		return NewPoint()
+	}
+
+	zinv := new(big.Int).ModInverse(z, curve.P)
+	zinvsq := new(big.Int).Mul(zinv, zinv)
+
+	xOut := new(big.Int).Mul(x, zinvsq)
+	xOut.Mod(xOut, curve.P)
+	zinvsq.Mul(zinvsq, zinv)
+	yOut := new(big.Int).Mul(y, zinvsq)
+	yOut.Mod(yOut, curve.P)
+	return &EcPoint{xOut, yOut}
+}

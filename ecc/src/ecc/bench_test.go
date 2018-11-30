@@ -44,23 +44,6 @@ func BenchmarkEdCurve_ScalaMultBaseProjective(b *testing.B) {
 	}
 }
 
-func TestEquationEc(t *testing.T) {
-	curve, _ := GetFpCurve("prime256v1")
-	p256 := elliptic.P256()
-	byter := make([]byte, 32)
-	_, err := rand.Reader.Read(byter)
-	if err != nil {
-		fmt.Println("gen rand err: ", err.Error())
-		return
-	}
-	fmt.Println("rand: ", hex.EncodeToString(byter))
-	x, y := p256.ScalarBaseMult(byter)
-	m := curve.ScalaMultBase(byter)
-	fmt.Println("x: ", x.String())
-	fmt.Println("y: ", y.String())
-	fmt.Println(m.X.Cmp(x), m.Y.Cmp(y))
-}
-
 func TestEquationEd(t *testing.T) {
 	byter := make([]byte, 32)
 	_, err := rand.Reader.Read(byter)
