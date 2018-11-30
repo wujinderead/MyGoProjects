@@ -1,6 +1,9 @@
 package ecc
 
-import "math/big"
+import (
+	"math/big"
+	"crypto/elliptic"
+)
 
 func (curve *FpCurve) IsOnCurve(p *EcPoint) bool {
 	// y² ≡ x³ + Ax + B (mod P)
@@ -86,4 +89,15 @@ func (curve *FpCurve) ScalaMult(p *EcPoint, k []byte) *EcPoint {
 
 func (curve *FpCurve) ScalaMultBase(k []byte) *EcPoint {
 	return curve.ScalaMult(&EcPoint{curve.X, curve.Y}, k)
+}
+
+func (curve *FpCurve) ToGoNative() *elliptic.CurveParams {
+	return &elliptic.CurveParams{
+		P: curve.P,      // the order of the underlying field
+		N: curve.Order,  // the order of the base point
+		B: curve.B,      // the constant of the curve equation
+		Gx: curve.X, Gy: curve.Y,  // (x,y) of the base point
+		BitSize: curve.P.BitLen(), // the size of the underlying field
+		Name: "",         // the canonical name of the curve
+	}
 }

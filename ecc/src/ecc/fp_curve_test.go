@@ -29,7 +29,7 @@ func TestConst(t *testing.T) {
 	t.Logf("%p, %p, %p, %p", p.X, p.Y, pCopy.X, pCopy.Y)
 }
 
-func TestEcCurve_Add(t *testing.T) {
+func TestFpCurve_Add(t *testing.T) {
 	curve, _ := GetFpCurve("secp224r1")
 	x1, _ := new(big.Int).SetString("19277929113566293071110308034699488026831934219452440156649784352033", 10)
 	y1, _ := new(big.Int).SetString("19926808758034470970197974370888749184205991990603949537637343198772", 10)
@@ -78,7 +78,7 @@ func TestEcCurve_Add(t *testing.T) {
 	t.Log(pc.ToStr())
 }
 
-func TestEcCurve_ScalaMult(t *testing.T) {
+func TestFpCurve_ScalaMult(t *testing.T) {
 	curve, _ := GetFpCurve("secp521r1")
 	cp := elliptic.P521()
 	t.Logf("%x %x %x", cp.Params().Gx.Bytes(), cp.Params().Gy.Bytes(), cp.Params().P.Bytes())

@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 	"unsafe"
+	"golang.org/x/text/encoding/unicode"
+	"strconv"
 )
 
 var (
@@ -319,31 +321,38 @@ func TestArraySize(t *testing.T) {
 }
 
 func TestUniCode(t *testing.T) {
-	// 𐌡  unicode 66337 (U+10321) utf8  f0908ca1
-	// ໔          3796  (U+0ED4)  utf8  e0bb94
-	// 加         21152 (U+52A0)  utf8   e58aa0
-	// ñ          241   (U+00F1)  utf8   c3b1
-	// A          65    (U+0041)  utf8   41
-	for _, a := range []rune{66337, 3796, 21152, 241, 65} {
-		s := string(a)
-		fmt.Println(s, hex.EncodeToString([]byte(s)))
-	}
-	var s string = "\xf0\x90\x8c\xa1\xe0\xbb\x94\xe5\x8a\xa0\xc3\xb1\x41"
-	fmt.Println(s, len(s))
-
 	a := []rune{'\u2070', '\u00b9', '\u00b2', '\u00b3', '\u2074', '\u2075', '\u2076', '\u2077', '\u2078', '\u2079'}
 	fmt.Println(a)
 	for _, r := range a {
 		fmt.Println("a" + string(r))
 	}
+	/*
+	[]byte("😀☯商ñA") return utf8 byte[]     '0x f09f9880e298afe59586c3b141'
+	[]rune("😀☯商ñA") return unicode int32[] {128512, 9775, 21830, 241, 65}
+	   +------+---------------------+------------+------------+
+	   | char |   unicode           |  utf8      |  utf16     |
+	   +------+---------------------+------------+------------+
+	   | 😀   |   128512 (U+1f660)  |  f09f9880  |  d83dde00  |
+	   | ☯    |   9775   (U+262F)   |  e298af    |  262f      |
+	   | 商   |   21830  (U+5546)   |  e59586    |  5546      |
+	   | ñ    |   241    (U+00F1)   |  c3b1      |  00f1      |
+	   | A    |   65     (U+0041)   |  41        |  0041      |
+	   +------+---------------------+------------+------------+ */
+	for _, a := range []rune{128512, 9775, 21830, 241, 65} {
+		s := string(a)
+		fmt.Println(s, hex.EncodeToString([]byte(s)))
+	}
 
 	// len(string) is the underlying utf8 bytes len
-	b := "\xf0\x90\x8c\xa1\xe0\xbb\x94\xe5\x8a\xa0\xc3\xb1\x41" // "𐌡໔加ñA"
+	b := "\xf0\x9f\x98\x80\xe2\x98\xaf\xe5\x95\x86\xc3\xb1\x41"  // "𐌡໔加ñA"
 	// when str is transferred to []rune, the number is the number of characters
 	c := []rune(b)
 	fmt.Println(b, len(b), len(c)) // 13, 5
 	for _, ch := range b {         // range string is to range []rune
-		fmt.Println(ch)
+		fmt.Println(ch, strconv.FormatInt(int64(ch), 16))
 	}
 
+	utf16 := unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM)
+	byter, _ := utf16.NewEncoder().Bytes([]byte(b))
+	fmt.Println(hex.EncodeToString(byter))
 }
