@@ -89,8 +89,6 @@ var names = []string{
 	SN_brainpoolP384t1,
 	SN_brainpoolP512r1,
 	SN_brainpoolP512t1,
-	SN_ipsec3,
-	SN_ipsec4,
 }
 
 func TestParams(t *testing.T) {
@@ -139,7 +137,7 @@ func TestParams_Binary(t *testing.T) {
 	initEc.Do(initEcCurves)
 	for _, name := range names {
 		spec := EcCurveSpecs[name]
-		if spec.Curve.head.fieldType != NID_X9_62_prime_field {
+		if spec.Curve.head.fieldType != NID_X9_62_characteristic_two_field {
 			continue // skip non binary field curve
 		}
 		curve := spec.Curve

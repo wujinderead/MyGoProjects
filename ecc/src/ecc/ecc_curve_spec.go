@@ -87,8 +87,6 @@ const (
 	SN_brainpoolP384t1         = "brainpoolP384t1"
 	SN_brainpoolP512r1         = "brainpoolP512r1"
 	SN_brainpoolP512t1         = "brainpoolP512t1"
-	SN_ipsec3                  = "Oakley-EC2N-3"
-	SN_ipsec4                  = "Oakley-EC2N-4"
 )
 
 type EcCurveSpec struct {
@@ -257,14 +255,6 @@ func initEcCurves() {
 
 	EcCurveSpecs[SN_wap_wsg_idm_ecid_wtls12] = &EcCurveSpec{SN_wap_wsg_idm_ecid_wtls12, _EC_WTLS_12,
 		"WTLS curve over a 224 bit prime field"}
-
-	/* IPSec curves */
-	EcCurveSpecs[SN_ipsec3] = &EcCurveSpec{SN_ipsec3, _EC_IPSEC_155_ID3,
-		"\n\tIPSec/IKE/Oakley curve #3 over a 155 bit binary field.\n" +
-			"\tNot suitable for ECDSA.\n\tQuestionable extension field!"}
-	EcCurveSpecs[SN_ipsec4] = &EcCurveSpec{SN_ipsec4, _EC_IPSEC_185_ID4,
-		"\n\tIPSec/IKE/Oakley curve #4 over a 185 bit binary field.\n" +
-			"\tNot suitable for ECDSA.\n\tQuestionable extension field!"}
 
 	/* brainpool curves */
 	EcCurveSpecs[SN_brainpoolP160r1] = &EcCurveSpec{SN_brainpoolP160r1, _EC_brainpoolP160r1,
