@@ -10,9 +10,6 @@ type EcCurve struct {
 	Seed, P, A, B, X, Y, Order *big.Int
 }
 
-type FpCurve EcCurve
-type F2mCurve EcCurve
-
 type EcPoint struct {
 	X, Y *big.Int
 }

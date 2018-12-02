@@ -5,6 +5,8 @@ import (
 	"crypto/elliptic"
 )
 
+type FpCurve EcCurve
+
 func (curve *FpCurve) IsOnCurve(p *EcPoint) bool {
 	// y² ≡ x³ + Ax + B (mod P)
 	y2 := new(big.Int).Mul(p.Y, p.Y) // y²
