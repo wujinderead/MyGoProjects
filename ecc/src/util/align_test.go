@@ -356,3 +356,32 @@ func TestUniCode(t *testing.T) {
 	byter, _ := utf16.NewEncoder().Bytes([]byte(b))
 	fmt.Println(hex.EncodeToString(byter))
 }
+
+func TestArrayConvert(t *testing.T) {
+	type ULL uint64
+	a := []uint64{0x123456, 0x123465, 0x123489, 0x1234560, 0x123456d, 0x123456a, 0x123456f,}
+	fmt.Println(unsafe.Sizeof(a))
+	pa := &a
+	fmt.Println(reflect.TypeOf(pa))
+	fmt.Println(reflect.TypeOf(a))
+
+	pull := (*[]ULL)(unsafe.Pointer(pa))
+	ull := *pull
+	fmt.Println(reflect.TypeOf(pull))
+	fmt.Println(reflect.TypeOf(ull))
+	fmt.Println(len(ull))
+	for i, _ := range ull {
+		fmt.Println(ull[i])
+	}
+	fmt.Println(ull)
+
+	pul := (*[]uint32)(unsafe.Pointer(pa))
+	ul := *pul
+	fmt.Println(reflect.TypeOf(pul))
+	fmt.Println(reflect.TypeOf(ul))
+	fmt.Println(len(ul))
+	for i, _ := range ul {
+		fmt.Println(ul[i])
+	}
+	fmt.Println(ul)
+}

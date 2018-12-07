@@ -6,7 +6,7 @@ import (
 
 type F2mCurve struct {
 	*EcCurve
-	size int
+	p []int
 }
 
 func (curve *F2mCurve) gadd(a, b *big.Int) *big.Int {
@@ -18,33 +18,20 @@ func (curve *F2mCurve) gaddSelf(a, b *big.Int) {
 }
 
 func (curve *F2mCurve) gmul(x, y *big.Int) *big.Int {
-	product := new(big.Int).SetInt64(0)
-	a := new(big.Int).Set(x)
-	//b := new(big.Int).Set(y)
-	for i:=0; i<curve.size; i++ {
-		// if b least bit is 1, then add the corresponding a to p
-		// final product is sum of all a's corresponding to odd b's
-		if y.Bit(i)==1 {
-			product.Xor(product, a)
-		}
-		a.Lsh(a, 1)
-		if a.Bit(curve.size) == 1 {
-			a.Xor(a, curve.P)
-		}
+	if x == y {
+		pro := bn_gf2m_sqr(x.Bits())
+		bn_gf2m_mod_arr_self(pro, curve.p)
+		return new(big.Int).SetBits(pro)
 	}
-	return product
+	pro := bn_gf2m_mul(x.Bits(), y.Bits())
+	bn_gf2m_mod_arr_self(pro, curve.p)
+	return new(big.Int).SetBits(pro)
 }
 
 func (curve *F2mCurve) gmulinv(a *big.Int) *big.Int {
 	// in GF(2^m), a^(2^m-1)=1, so a*a^(2^m-2)=1, so a^-1=a(2^m-2)
-	g := new(big.Int).Set(a)
-	product := new(big.Int).Set(a)
-	for i:=0; i<curve.size-2; i++ {
-		g = curve.gmul(g, g)
-		product = curve.gmul(product, g)
-	}
-	product = curve.gmul(product, product)
-	return product
+	inv := bn_gf2m_mod_inv_vartime(a.Bits(), curve.P.Bits())
+	return new(big.Int).SetBits(inv)
 }
 
 // elliptic curve y²+xy=x³+Ax²+B over finite binary field
@@ -134,4 +121,23 @@ func (curve *F2mCurve) ScalaMult(p *EcPoint, k []byte) *EcPoint {
 
 func (curve *F2mCurve) ScalaMultBase(k []byte) *EcPoint {
 	return curve.ScalaMult(&EcPoint{curve.X, curve.Y}, k)
+}
+
+// reference implements for gf2m multiply
+func (curve *F2mCurve) gmulReference(x, y *big.Int) *big.Int {
+	product := new(big.Int).SetInt64(0)
+	a := new(big.Int).Set(x)
+	size := curve.P.BitLen()-1
+	for i:=0; i<size; i++ {
+		// if b least bit is 1, then add the corresponding a to p
+		// final product is sum of all a's corresponding to odd b's
+		if y.Bit(i)==1 {
+			product.Xor(product, a)
+		}
+		a.Lsh(a, 1)
+		if a.Bit(size) == 1 {
+			a.Xor(a, curve.P)
+		}
+	}
+	return product
 }

@@ -346,5 +346,5 @@ func GetF2mCurve(name string) (*F2mCurve, error) {
 	if spec.Curve.head.fieldType != NID_X9_62_characteristic_two_field {
 		return nil, errors.New(fmt.Sprintf("curve '%s' is not for binary field", name))
 	}
-	return &F2mCurve{spec.Curve, spec.Curve.P.BitLen()-1}, nil
+	return &F2mCurve{spec.Curve, bn_gf2m_poly2arr(spec.Curve.P.Bits())}, nil
 }

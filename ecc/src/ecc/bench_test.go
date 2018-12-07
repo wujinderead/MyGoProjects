@@ -2,10 +2,7 @@ package ecc
 
 import (
 	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/hex"
-	"fmt"
-	"math/big"
 	"testing"
 )
 
@@ -42,28 +39,4 @@ func BenchmarkEdCurve_ScalaMultBaseProjective(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ed.ScalaMultBaseProjective(byter)
 	}
-}
-
-func TestEquationEd(t *testing.T) {
-	byter := make([]byte, 32)
-	_, err := rand.Reader.Read(byter)
-	if err != nil {
-		fmt.Println("gen rand err: ", err.Error())
-		return
-	}
-	fmt.Println("rand: ", hex.EncodeToString(byter))
-	ed := Ed25519()
-	m1 := ed.ScalaMultBase(byter)
-	m2 := ed.ScalaMultBaseProjective(byter)
-	fmt.Println("x: ", m1.X.String())
-	fmt.Println("y: ", m1.Y.String())
-	fmt.Println(m1.X.Cmp(m2.X), m1.Y.Cmp(m2.Y))
-}
-
-func TestEquationJava(t *testing.T) {
-	curve, _ := GetFpCurve("prime256v1")
-	s, _ := new(big.Int).SetString("27519130846651076635714601172252979491810019324250252554655444934306184823446", 10)
-	point := curve.ScalaMultBase(s.Bytes())
-	fmt.Println("X: ", point.X.String())
-	fmt.Println("Y: ", point.Y.String())
 }
