@@ -30,6 +30,14 @@ func ModFractionInt64(a, b int64, p *big.Int) *big.Int {
 	return ModFraction(aa, bb, p)
 }
 
+func zForAffine(x, y *big.Int) *big.Int {
+	z := new(big.Int)
+	if x.Sign() != 0 || y.Sign() != 0 {
+		z.SetInt64(1)
+	}
+	return z
+}
+
 func getOpensslEcPrivateKey(curve string) (error, []byte, *big.Int, *big.Int) {
 	cmd := exec.Command("openssl", "ecparam", "-name", curve, "-genkey")
 	data, err := cmd.Output()

@@ -246,31 +246,106 @@ func (curve *MtCurve) ScalaMultBase(k []byte) *EcPoint {
 	return curve.ScalaMult(&EcPoint{curve.Bx, curve.By}, k)
 }
 
-func zForAffine(x, y *big.Int) *big.Int {
-	z := new(big.Int)
-	if x.Sign() != 0 || y.Sign() != 0 {
-		z.SetInt64(1)
+/*
+	// use montgomery ladder to perform scalar multiply
+  	R0 ← 0
+  	R1 ← P
+  	for i from m downto 0 do
+    	if di = 0 then
+        	R1 ← point_add(R0, R1)
+        	R0 ← point_double(R0)
+		else
+        	R0 ← point_add(R0, R1)
+        	R1 ← point_double(R1)
+  	return R0
+*/
+func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *big.Int {
+	x, z := p.X, zForAffine(p.X, p.Y)
+	x0, z0 := new(big.Int), new(big.Int)
+	x1, z1 := new(big.Int).Set(p.X), zForAffine(p.X, p.Y)
+	for _,b := range k {
+		for i:=0; i<8; i++ {
+			if b&0x80 == 0x80 {
+				x0, z0 = curve.diffAddProjective(x, z, x0, z0, x1, z1) // R0 = R0 ⊕ R1
+				x1, z1 = curve.doubleProjective(x1, z1)                // R1 = 2R1
+			} else {
+				x1, z1 = curve.diffAddProjective(x, z, x0, z0, x1, z1) // R1 = R0 ⊕ R1
+				x0, z0 = curve.doubleProjective(x0, z0)                // R0 = 2R0
+			}
+			b <<= 1
+		}
 	}
-	return z
+	return curve.affineFromProjective(x0, z0)
 }
 
-func (curve *MtCurve) affineFromProjective(x, y, z *big.Int) (xOut, yOut *big.Int) {
+func (curve *MtCurve) ScalaMultBaseProjective(k []byte) *big.Int {
+	return curve.ScalaMultProjective(&EcPoint{curve.Bx, curve.By}, k)
+}
+
+func (curve *MtCurve) affineFromProjective(x, z *big.Int) (xOut *big.Int) {
 	if z.Sign() == 0 {
-		return new(big.Int), new(big.Int)
+		return new(big.Int)
 	}
 	zinv := new(big.Int).ModInverse(z, curve.P)
 	xOut = new(big.Int).Mul(x, zinv)
 	xOut.Mod(xOut, curve.P)
-	yOut = new(big.Int).Mul(y, zinv)
-	yOut.Mod(yOut, curve.P)
 	return
 }
 
-func (curve *MtCurve) doubleProjective(x1, z1, x2, z2 *big.Int) (x3, z3 *big.Int) {
+func (curve *MtCurve) doubleProjective(x1, z1 *big.Int) (x3, z3 *big.Int) {
+	// X3 = (X1²-Z1²)²
+	// Z3 = 4*X1*Z1*(X1²+a*X1*Z1+Z1²)
+	x3 = new(big.Int).Mul(x1, x1)
+	tmp := new(big.Int).Mul(z1, z1)
+	z3 = new(big.Int).Add(x3, tmp)
+	x3.Sub(x3, tmp)
+	x3.Mul(x3, x3)
+	x3.Mod(x3, curve.P)
+	tmp.Mul(x1, z1)
+	z3.Mul(z3, tmp)
+	tmp.Mul(tmp, tmp)
+	tmp.Mul(tmp, curve.A)
+	z3.Add(z3, tmp)
+	z3.Lsh(z3, 2)
+	z3.Mod(z3, curve.P)
 	return
 }
 
-func (curve *MtCurve) addProjective(x1, z1, x2, z2 *big.Int) (x3, z3 *big.Int) {
+// (x1, z1) is the differential, (x2, z2) and (x3, z3) are the points to be added
+func (curve *MtCurve) diffAddProjective(x1, z1, x2, z2, x3, z3 *big.Int) (x5, z5 *big.Int) {
+	x5, z5 = new(big.Int), new(big.Int)
+	if z2.Sign() == 0 {
+		x5.Set(x3)
+		z5.Set(z3)
+		return
+	}
+	if z3.Sign() == 0 {
+		x5.Set(x2)
+		z5.Set(z2)
+		return
+	}
+	// A = X2+Z2
+	// B = X2-Z2
+	// C = X3+Z3
+	// D = X3-Z3
+	// DA = D*A
+	// CB = C*B
+	// X5 = Z1*(DA+CB)²
+	// Z5 = X1*(DA-CB)²
+	A := new(big.Int).Add(x2, z2)
+	B := new(big.Int).Sub(x2, z2)
+	C := new(big.Int).Add(x3, z3)
+	D := new(big.Int).Sub(x3, z3)
+	DA := new(big.Int).Mul(D, A)
+	CB := new(big.Int).Mul(C, B)
+	x5 = new(big.Int).Add(DA, CB)
+	x5.Mul(x5, x5)
+	x5.Mul(x5, z1)
+	x5.Mod(x5, curve.P)
+	z5 = new(big.Int).Sub(DA, CB)
+	z5.Mul(z5, z5)
+	z5.Mul(z5, x1)
+	z5.Mod(z5, curve.P)
 	return
 }
 
@@ -316,7 +391,7 @@ func (curve *MtCurve) ToEdwardsPointForm1(sqrtB *big.Int, p *EcPoint) (p1, p2 *E
 	return
 }
 
-// form 1:
+// form 2:
 // to map montgomery: "Bv² ≡ u³ + Au² + u mod p" to edwards: "ax² + y² ≡ 1 + Dx²y² mod p"
 // set edwards.a = (mont.A-2)/mont.B
 //     edwards.D = (mont.A+2)/mont.B
