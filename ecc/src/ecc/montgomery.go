@@ -259,8 +259,8 @@ func (curve *MtCurve) ScalaMultBase(k []byte) *EcPoint {
         	R1 ← point_double(R1)
   	return R0
 */
-func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *big.Int {
-	x, z := p.X, zForAffine(p.X, p.Y)
+func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *EcPoint {
+	x, y, z := p.X, p.Y, zForAffine(p.X, p.Y)
 	x0, z0 := new(big.Int), new(big.Int)
 	x1, z1 := new(big.Int).Set(p.X), zForAffine(p.X, p.Y)
 	for _,b := range k {
@@ -275,14 +275,55 @@ func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *big.Int {
 			b <<= 1
 		}
 	}
-	return curve.affineFromProjective(x0, z0)
+	x, y, z = curve.recoverY(x, y, x0, z0, x1, z1)
+	return curve.affineFromProjective(x, y, z)
 }
 
-func (curve *MtCurve) ScalaMultBaseProjective(k []byte) *big.Int {
+/*
+	Give point P(xP, yP), through montgomery ladder, we can get scalar multiplication product of
+	kP = (Xₖ, Zₖ) and (k+1)P = (Xₖ₊₁, Zₖ₊₁) in projective coordinates. One can compute the y-coordinate of Q,
+	if (xP : yP : 1) = P , (XQ : ZQ) = x(Q), and (X⊕ : Z⊕) = x(P⊕Q) are known. Note that (k+1)P = kP + P,
+	so we can recover the y-coordinate of the scalar multiplication result.
+	Algorithm 5 in "Montgomery curves and their arithmetic: The case of large characteristic fields".
+	The parameters of this function:
+		xP, yP: the affine coordinate of point P
+		Xq, Zq: the projective coordinate of kP
+		Xa, Za: the projective coordinate of (k+1)P
+	return (X', Y', Z'), the new projective coordinates of kP
+*/
+func (curve *MtCurve) recoverY(xP, yP, Xq, Zq, Xa, Za *big.Int) (X, Y, Z *big.Int) {
+	v1 := new(big.Int).Mul(xP, Zq)
+	v2 := new(big.Int).Add(Xq, v1)
+	v3 := new(big.Int).Sub(Xq, v1)
+	v3.Mul(v3, v3)
+	v3.Mul(v3, Xa)
+	v1.Mul(curve.A, Zq)
+	v1.Lsh(v1, 1)
+	v2.Add(v2, v1)
+	v4 := new(big.Int).Mul(xP, Xq)
+	v4.Add(v4, Zq)
+	v2.Mul(v2, v4)
+	v1.Mul(v1, Zq)
+	v2.Sub(v2, v1)
+	v2.Mul(v2, Za)
+	Y = new(big.Int).Sub(v2, v3)
+	Y.Mod(Y, curve.P)
+	v1.Mul(curve.B, yP)
+	v1.Lsh(v1, 1)
+	v1.Mul(v1, Zq)
+	v1.Mul(v1, Za)
+	X = new(big.Int).Mul(v1, Xq)
+	X.Mod(X, curve.P)
+	Z = new(big.Int).Mul(v1, Zq)
+	Z.Mod(Z, curve.P)
+	return
+}
+
+func (curve *MtCurve) ScalaMultBaseProjective(k []byte) *EcPoint {
 	return curve.ScalaMultProjective(&EcPoint{curve.Bx, curve.By}, k)
 }
 
-func (curve *MtCurve) affineFromProjective(x, z *big.Int) (xOut *big.Int) {
+func (curve *MtCurve) affineFromProjectiveX(x, z *big.Int) (xOut *big.Int) {
 	if z.Sign() == 0 {
 		return new(big.Int)
 	}
@@ -290,6 +331,18 @@ func (curve *MtCurve) affineFromProjective(x, z *big.Int) (xOut *big.Int) {
 	xOut = new(big.Int).Mul(x, zinv)
 	xOut.Mod(xOut, curve.P)
 	return
+}
+
+func (curve *MtCurve) affineFromProjective(x, y, z *big.Int) *EcPoint {
+	if z.Sign() == 0 {
+		return NewPoint()
+	}
+	zinv := new(big.Int).ModInverse(z, curve.P)
+	xOut := new(big.Int).Mul(x, zinv)
+	xOut.Mod(xOut, curve.P)
+	yOut := new(big.Int).Mul(y, zinv)
+	yOut.Mod(yOut, curve.P)
+	return &EcPoint{xOut, yOut}
 }
 
 func (curve *MtCurve) doubleProjective(x1, z1 *big.Int) (x3, z3 *big.Int) {
@@ -311,6 +364,7 @@ func (curve *MtCurve) doubleProjective(x1, z1 *big.Int) (x3, z3 *big.Int) {
 	return
 }
 
+// differential adding is to compute P+Q, given not only P nad Q, but also P-Q.
 // (x1, z1) is the differential, (x2, z2) and (x3, z3) are the points to be added
 func (curve *MtCurve) diffAddProjective(x1, z1, x2, z2, x3, z3 *big.Int) (x5, z5 *big.Int) {
 	x5, z5 = new(big.Int), new(big.Int)
