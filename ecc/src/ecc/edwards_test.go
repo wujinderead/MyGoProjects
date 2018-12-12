@@ -1,7 +1,6 @@
 package ecc
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"testing"
@@ -101,24 +100,4 @@ func TestEdCurve_ScalaMultProjective(t *testing.T) {
 			fmt.Println(re1.Equals(re), pa.Equals(pa1))
 		}
 	}
-}
-
-func TestDD(t *testing.T) {
-	POS156328 := new(big.Int).SetInt64(156328)
-	POS156324 := new(big.Int).SetInt64(156324)
-	p, _ := new(big.Int).SetString("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
-	d := new(big.Int).ModInverse(POS156328, p)
-	d.Mul(d, POS156324)
-	d.Mod(d, p)
-	fmt.Println("d: ", d.String())
-	bx, _ := new(big.Int).SetString("15112221349535400772501151409588531511454012693041857206046113283949847762202", 10)
-	by, _ := new(big.Int).SetString("46316835694926478169428394003475163141307993866256225615783033603165251855960", 10)
-	fmt.Println(ModFractionInt64(4, 5, Curve25519().P).String())
-	fmt.Println(hex.EncodeToString(ModFractionInt64(4, 5, Curve25519().P).Bytes()))
-	fmt.Println(bx.String())
-	fmt.Println(hex.EncodeToString(bx.Bytes()))
-	fmt.Println(by.String())
-	fmt.Println(hex.EncodeToString(by.Bytes()))
-	//[216936d3cd6e53fec0a4e231fdd6dc5c692cc7609525a7b2c9562d608f25d51a,
-	// 6666666666666666666666666666666666666666666666666666666666666658]
 }

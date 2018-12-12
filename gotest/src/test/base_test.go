@@ -1,9 +1,10 @@
 package test
 
 import (
-	"testing"
 	"encoding/base64"
+	"testing"
 )
+
 type testpair struct {
 	decoded, encoded string
 }

@@ -1,15 +1,15 @@
-package util
+package unix
 
 import (
-	"net"
 	"fmt"
+	"io"
 	"log"
-	"os/signal"
+	"net"
 	"os"
+	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
-	"io"
-	"strconv"
 )
 
 var sock_file_path = "/home/xzy/test.sock"

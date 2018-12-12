@@ -1,10 +1,10 @@
 package timer
 
 import (
-	"testing"
-	"time"
 	"fmt"
 	"reflect"
+	"testing"
+	"time"
 )
 
 func TestLocation(t *testing.T) {
@@ -13,7 +13,8 @@ func TestLocation(t *testing.T) {
 	for _, zone := range zones {
 		location, err := time.LoadLocation(zone)
 		if err != nil {
-			fmt.Println("load loaction err: ", err.Error(), "\n")
+			fmt.Println("load location err: ", err.Error())
+			fmt.Println()
 			continue
 		}
 		fmt.Println("input: ", zone, ", output: ", location.String())

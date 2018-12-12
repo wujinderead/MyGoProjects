@@ -41,15 +41,15 @@ func TestCount(t *testing.T) {
 }
 
 func TestFold(t *testing.T) {
-	t.Log("Fields are: %q", bytes.Fields([]byte("  foo bar  baz   ")))
+	t.Logf("Fields are: %q", bytes.Fields([]byte("  foo bar  baz   ")))
 	f := func(c rune) bool {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
 	}
-	t.Log("Fields are: %q", bytes.FieldsFunc([]byte("  foo1;bar2,baz3..."), f))
+	t.Logf("Fields are: %q", bytes.FieldsFunc([]byte("  foo1;bar2,baz3..."), f))
 	f1 := func(c rune) bool {
 		return !unicode.IsLetter(c)
 	}
-	t.Log("Fields are: %q", bytes.FieldsFunc([]byte("  foo1;bar2,baz3..."), f1))
+	t.Logf("Fields are: %q", bytes.FieldsFunc([]byte("  foo1;bar2,baz3..."), f1))
 }
 
 func TestHasPrefix(t *testing.T) {
@@ -102,7 +102,7 @@ func TestAll(t *testing.T) {
 }
 
 func TestRune(t *testing.T) {
-	t.Log(bytes.IndexRune([]byte("aa我的世界"), '我'))
+	fmt.Println(bytes.IndexRune([]byte("aa我的世界"), '我'))
 	aa := bytes.Runes([]byte("aa我的世界"))
 	for _, c := range aa {
 		fmt.Printf("%c ", c)
