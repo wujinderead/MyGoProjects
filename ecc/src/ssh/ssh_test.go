@@ -2,22 +2,22 @@ package ssh
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"io/ioutil"
 	"math/big"
 	"strings"
 	"testing"
-	"crypto/sha512"
-	"golang.org/x/crypto/curve25519"
 	"util"
-	"crypto/rand"
-	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 func TestParsePrivateKey(t *testing.T) {
