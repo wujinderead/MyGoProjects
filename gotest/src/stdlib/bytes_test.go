@@ -1,10 +1,10 @@
-package test
+package stdlib
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 	"unicode"
-	"fmt"
 )
 
 func TestCompare(t *testing.T) {

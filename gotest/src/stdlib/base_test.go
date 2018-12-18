@@ -1,4 +1,4 @@
-package test
+package stdlib
 
 import (
 	"encoding/base64"

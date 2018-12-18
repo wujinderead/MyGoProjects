@@ -2,7 +2,6 @@ package stdlib
 
 import (
 	"fmt"
-	"math/big"
 	"testing"
 )
 
@@ -52,17 +51,4 @@ func TestReference(t *testing.T) {
 		x = 7
 	}(arr[2])
 	fmt.Println(arr)
-}
-
-// var a []big.Word = big.Int.Bits()
-// modify array 'a' will modify the big int
-func TestModifyBigInt(t *testing.T) {
-	a, _ := new(big.Int).SetString("1a232fdfdfdfdfdfdfdfdfdfd2346", 16)
-	fmt.Println(a)
-	arr := a.Bits()
-	fmt.Println(arr)
-	arr[0] = 0x23456789
-	arr[1] = 0xfdcaed
-	fmt.Println(arr)
-	fmt.Println(a)
 }

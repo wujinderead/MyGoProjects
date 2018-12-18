@@ -1,11 +1,11 @@
-package test
+package stdlib
 
 import (
+	"bytes"
+	"encoding/hex"
 	"golang.org/x/crypto/ripemd160"
 	"hash"
 	"testing"
-	"encoding/hex"
-	"bytes"
 )
 
 type mdTest struct {

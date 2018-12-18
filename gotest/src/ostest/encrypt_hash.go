@@ -1,16 +1,16 @@
-package test
+package ostest
 
 import (
-	"os"
-	"errors"
-	"hash"
+	"crypto/md5"
+	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"errors"
 	"fmt"
+	"hash"
 	"io"
+	"os"
 	"os/exec"
-	"crypto/sha1"
-	"crypto/md5"
 )
 
 const (
