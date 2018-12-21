@@ -37,7 +37,7 @@ import (
 	String
 	Struct
 	UnsafePointer
- */
+*/
 
 func TestType(t *testing.T) {
 	var booler bool = true
@@ -53,8 +53,8 @@ func TestType(t *testing.T) {
 	var uinter16 uint16 = 19
 	var uinter32 uint32 = 19
 	var uinter64 uint64 = 19
-	var byter byte = 126            // kind: uint8
-	var runer rune = '哈'           // kind: int32
+	var byter byte = 126 // kind: uint8
+	var runer rune = '哈' // kind: int32
 	var floater32 float32 = 33.2
 	var floater64 float64 = 33.2
 	var complexer64 complex64 = complex(floater32, floater32)   // size:  8, align:  4
@@ -90,18 +90,18 @@ func TestType(t *testing.T) {
 	type PUINTER64 *uint64
 	type P_PINTER8 *PINTER8
 	type P_PUINTER64 *PUINTER64
-	var b_inter8 = INTER8(inter8)                   // kind int8
-	var b_uinter64 = UINTER64(uinter64)             // kind uint64
-	var pb_inter8 = PINTER8(p_inter8)               // kind ptr
-	var pb_uinter64 = PUINTER64(p_uinter64)         // kind ptr
-	var pp_inter8 P_PINTER8 = &pb_inter8            // kind ptr
-	var pp_uinter64 P_PUINTER64 = &pb_uinter64      // kind ptr
+	var b_inter8 = INTER8(inter8)              // kind int8
+	var b_uinter64 = UINTER64(uinter64)        // kind uint64
+	var pb_inter8 = PINTER8(p_inter8)          // kind ptr
+	var pb_uinter64 = PUINTER64(p_uinter64)    // kind ptr
+	var pp_inter8 P_PINTER8 = &pb_inter8       // kind ptr
+	var pp_uinter64 P_PUINTER64 = &pb_uinter64 // kind ptr
 
 	vars := []interface{}{inter, inter8, inter16, inter32, inter64, uinter, uinter8, uinter16, uinter32, uinter64,
 		booler, byter, runer, floater32, floater64, complexer64, complexer128, stringer, uintptrer,
 		p_inter, p_inter8, p_inter16, p_inter32, p_inter64, p_uinter, p_uinter8, p_uinter16, p_uinter32, p_uinter64,
 		p_booler, p_byter, p_runer, p_floater32, p_floater64, p_complexer64, p_complexer128, p_stringer,
-		b_inter8, b_uinter64, pb_inter8, pb_uinter64, pp_inter8, pp_uinter64, }
+		b_inter8, b_uinter64, pb_inter8, pb_uinter64, pp_inter8, pp_uinter64}
 
 	for i := range vars {
 		typer := reflect.TypeOf(vars[i])
@@ -124,23 +124,23 @@ func TestArraySliceStruct(t *testing.T) {
 		stringer string
 	}
 	type Stct3 struct {
-		uinter8 uint8
+		uinter8  uint8
 		stringer string
-		arrayer []int16
+		arrayer  []int16
 	}
 	type Stct4 struct {
-		inter16 [81]int16
+		inter16  [81]int16
 		stringer string
-		arrayer []uint8
+		arrayer  []uint8
 	}
 	type Stct5 struct {
-		inter8 int8
+		inter8  int8
 		inter16 int16
 	}
 	type Stct6 struct {
-		inter8 int8
+		inter8  int8
 		inter16 int16
-		stct4 Stct4
+		stct4   Stct4
 	}
 
 	s1, s2 := "hahahah", "lalalal"
@@ -153,15 +153,17 @@ func TestArraySliceStruct(t *testing.T) {
 
 	// for slice, kind is slice, size = 24, align = 8
 	var unfixer []uint8 = []uint8{12, 234, 66, 79}
-	var slicer []string = make([]string, 7);slicer[0] = s1;slicer[1] = s2
+	var slicer []string = make([]string, 7)
+	slicer[0] = s1
+	slicer[1] = s2
 
 	// struct
-	stct1 := Stct1{18}   // 1 byte
-	stct2 := Stct2{18, "hahahah"}   // 8(1) + 16 bytes
-	stct3 := Stct3{18, "hahahah", []int16{1, 2, 3, 4, 5}}  // 8(1) + 16 + 24 bytes
-	stct4 := Stct4{[81]int16{1, 2, 3, 4, 5}, "hahahah", []uint8{1, 2, 3}}  // 168(162) + 16 + 24 bytes
-	stct5 := Stct5{12, 12345}  // 2(1) + 2 = 4 bytes
-	stct6 := Stct6{12, 12345, stct4}  // 2(1) + 6(2) + 208 bytes
+	stct1 := Stct1{18}                                                    // 1 byte
+	stct2 := Stct2{18, "hahahah"}                                         // 8(1) + 16 bytes
+	stct3 := Stct3{18, "hahahah", []int16{1, 2, 3, 4, 5}}                 // 8(1) + 16 + 24 bytes
+	stct4 := Stct4{[81]int16{1, 2, 3, 4, 5}, "hahahah", []uint8{1, 2, 3}} // 168(162) + 16 + 24 bytes
+	stct5 := Stct5{12, 12345}                                             // 2(1) + 2 = 4 bytes
+	stct6 := Stct6{12, 12345, stct4}                                      // 2(1) + 6(2) + 208 bytes
 
 	// on 64-bit machine, it tries to align the struct size to folds of 8 bytes
 	// for example [79]int16 need 158 bytes to store, so align to 160 bytes,
@@ -174,8 +176,8 @@ func TestArraySliceStruct(t *testing.T) {
 	fmt.Println(unsafe.Sizeof(stct6), unsafe.Offsetof(stct6.inter8), unsafe.Offsetof(stct6.inter16), unsafe.Offsetof(stct6.stct4))
 
 	// struct array
-	var stct4_array [3]Stct4 = [3]Stct4{stct4, stct4}  // size = 208*3, align = 8
-	var stct4_slice []Stct4 = make([]Stct4, 129)       // size = 24, align = 8
+	var stct4_array [3]Stct4 = [3]Stct4{stct4, stct4} // size = 208*3, align = 8
+	var stct4_slice []Stct4 = make([]Stct4, 129)      // size = 24, align = 8
 
 	// array, slice pointer
 	var p_fixer *[5]int16 = &fixer
@@ -213,13 +215,13 @@ func TestArraySliceStruct(t *testing.T) {
 
 func TestAlign(t *testing.T) {
 	type Stct struct {
-		inter8 int8
-		inter16 int16
-		inter32 int32
+		inter8   int8
+		inter16  int16
+		inter32  int32
 		stringer string
 	}
 	// the data is stored in little endian
-	s := &Stct{2, 11*256+89, 17*256*256*256+15*256*256+13*256+11, "aaa"}
+	s := &Stct{2, 11*256 + 89, 17*256*256*256 + 15*256*256 + 13*256 + 11, "aaa"}
 	fmt.Println(unsafe.Sizeof(*s))
 	fmt.Println(unsafe.Offsetof(s.inter8))
 	fmt.Println(unsafe.Offsetof(s.inter16))
@@ -227,7 +229,7 @@ func TestAlign(t *testing.T) {
 	fmt.Println(unsafe.Offsetof(s.stringer))
 	base := unsafe.Pointer(s)
 	// *int <--> unsafe.Pointer <--> uintptr
-	for i:=0; i<int(unsafe.Sizeof(*s)); i++ {
+	for i := 0; i < int(unsafe.Sizeof(*s)); i++ {
 		p := (*byte)(unsafe.Pointer(uintptr(base) + uintptr(i)))
 		fmt.Println(i, ": ", *p)
 	}
@@ -274,28 +276,12 @@ func TestPointer(t *testing.T) {
 	fmt.Println("p16_0: ", p16_0, ", value: ", strconv.FormatUint(uint64(*p16_0), 16))
 	fmt.Println("p16_1: ", p16_1, ", value: ", strconv.FormatUint(uint64(*p16_1), 16))
 	fmt.Println("p16_2: ", p16_2, ", value: ", strconv.FormatUint(uint64(*p16_2), 16))
-}
+	fmt.Println()
 
-type Aircraft struct {
-	no int8     `json:"no"`
-	Name string `json:"name"`
-}
-type Bird struct {
-	name string
-	elliptic.CurveParams
-}
-type Fly interface {
-	fly(from int, to uint) bool
-}
-
-func (aircraft *Aircraft) fly(from int, to uint) bool {
-	fmt.Println(aircraft.Name, aircraft.no)
-	return true
-}
-
-func (bird Bird) fly(from int, to uint) bool {
-	fmt.Println(bird)
-	return true
+	// when fmt.Print(*p), it prints the hex of the uintptr address
+	fmt.Println("pointer: ", p32)
+	uintptr_p32 := uintptr(unsafe.Pointer(p32))
+	fmt.Println(strconv.FormatUint(uint64(uintptr_p32), 16))
 }
 
 func TestFuncInterfaceStruct(t *testing.T) {
@@ -316,7 +302,7 @@ func TestFuncInterfaceStruct(t *testing.T) {
 	// field.Anonymous mean that whether the field is explicitly named
 	typer := reflect.TypeOf(aircraft)
 	num := typer.NumField()
-	for i:=0; i<num; i++ {
+	for i := 0; i < num; i++ {
 		field := typer.Field(i)
 		fmt.Printf("name: %s, type: %s, anonymous: %t, index: %d, off: %d, pkg: %s, tag: %s\n",
 			field.Name, field.Type, field.Anonymous, field.Index, field.Offset, field.PkgPath, field.Tag)
@@ -325,34 +311,50 @@ func TestFuncInterfaceStruct(t *testing.T) {
 
 	typer = reflect.TypeOf(bird)
 	num = typer.NumField()
-	for i:=0; i<num; i++ {
+	for i := 0; i < num; i++ {
 		field := typer.Field(i)
 		fmt.Printf("name: %s, type: %s, anonymous: %t, index: %d, off: %d, pkg: %s, tag: %s\n",
 			field.Name, field.Type, field.Anonymous, field.Index, field.Offset, field.PkgPath, field.Tag)
 	}
 	num_curve, _ := typer.FieldByName("CurveParams")
-	for i:=0; i<num_curve.Type.NumField(); i++ {
-		field := typer.FieldByIndex([]int{1, i})  // FieldByIndex to get cascade field
+	for i := 0; i < num_curve.Type.NumField(); i++ {
+		field := typer.FieldByIndex([]int{1, i}) // FieldByIndex to get cascade field
 		fmt.Printf("name: %s, type: %s, anonymous: %t, index: %d, off: %d, pkg: %s, tag: %s\n",
 			field.Name, field.Type, field.Anonymous, field.Index, field.Offset, field.PkgPath, field.Tag)
 	}
+	fmt.Println()
 
 	// TODO: how to instantiate an interface, make a variable that reflect.TypeOf(var).Kind()==Interface?
 	// it's a tricky way, make *Interface or []Interface, and get its Elem()
 	// for example: var flyer = reflect.TypeOf((*Fly)(nil)).Elem()
 	var flyer = reflect.TypeOf([]Fly{}).Elem()
+	var facer = reflect.TypeOf([]interface{}{}).Elem()
+	var stringer = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
 	fmt.Println("name: ", flyer.String(), ", kind: ", flyer.Kind())
+	fmt.Println("name: ", facer.String(), ", kind: ", facer.Kind())
+	fmt.Println("name: ", stringer.String(), ", kind: ", stringer.Kind())
 	// if A implements an interface, *A does too;
 	// if *A implements an interface, A doesn't
-	fmt.Println("implements: ", reflect.TypeOf(aircraft).Implements(flyer))
-	fmt.Println("implements: ", reflect.TypeOf(p_aircraft).Implements(flyer))
-	fmt.Println("implements: ", reflect.TypeOf(bird).Implements(flyer))
-	fmt.Println("implements: ", reflect.TypeOf(p_bird).Implements(flyer))
+	fmt.Println("implements flyer: ", reflect.TypeOf(aircraft).Implements(flyer))
+	fmt.Println("implements flyer: ", reflect.TypeOf(p_aircraft).Implements(flyer))
+	fmt.Println("implements flyer: ", reflect.TypeOf(bird).Implements(flyer))
+	fmt.Println("implements flyer: ", reflect.TypeOf(p_bird).Implements(flyer))
+	fmt.Println("implements stringer: ", reflect.TypeOf(aircraft).Implements(stringer))
+	fmt.Println("implements stringer: ", reflect.TypeOf(p_aircraft).Implements(stringer))
+	fmt.Println("implements stringer: ", reflect.TypeOf(bird).Implements(stringer))
+	fmt.Println("implements stringer: ", reflect.TypeOf(p_bird).Implements(stringer))
+	// everything implements empty interface
+	fmt.Println("implements facer: ", reflect.TypeOf(aircraft).Implements(facer))
+	fmt.Println("implements facer: ", reflect.TypeOf(p_aircraft).Implements(facer))
+	fmt.Println("implements facer: ", reflect.TypeOf(bird).Implements(facer))
+	fmt.Println("implements facer: ", reflect.TypeOf(p_bird).Implements(facer))
+	fmt.Println()
 	// t1.AssignableTo(t2) check whether t1 can directly assign to t2, or whether t1 implements t2
 	fmt.Println("assignable: ", reflect.TypeOf(aircraft).AssignableTo(flyer))
 	fmt.Println("assignable: ", reflect.TypeOf(p_aircraft).AssignableTo(flyer))
 	fmt.Println("assignable: ", reflect.TypeOf(bird).AssignableTo(flyer))
 	fmt.Println("assignable: ", reflect.TypeOf(p_bird).AssignableTo(flyer))
+	// struct that implements interface can be assigned to the interface, however the other way can not
 	fmt.Println("assignable: ", flyer.AssignableTo(reflect.TypeOf(aircraft)))
 	fmt.Println("assignable: ", flyer.AssignableTo(reflect.TypeOf(p_aircraft)))
 	fmt.Println("assignable: ", flyer.AssignableTo(reflect.TypeOf(bird)))
@@ -372,46 +374,56 @@ func TestCompareAssignConvert(t *testing.T) {
 	types := []reflect.Type{t_int, t_int16, t_int64, t_uint, t_uint16, t_uint64, t_float32, t_float64, t_complex64}
 
 	// integers, unsigned integers, and floats are convertible to each other, while complexes can't
-	for i:=0; i<len(types); i++ {
-		for j:=0; j<len(types); j++ {
+	for i := 0; i < len(types); i++ {
+		for j := 0; j < len(types); j++ {
 			fmt.Printf("%10s %10s, assign: %5t, convert: %t\n",
 				types[i], types[j], types[i].AssignableTo(types[j]), types[i].ConvertibleTo(types[j]))
 		}
 	}
 
-	// test convert
-	var inter64 int64 = -997654321098765432
-	var uinter64 uint64 = 0x1234567890abcdef
-	var floater64 float64 = 1.234E24
+	// test convert                            // binary representation in memory (little-endian)
+	var inter64 int64 = -997654321098765432  // 88 4b 46 46 ae 9e 27 f2
+	var uinter64 uint64 = 0x1234567890abcdef // ef cd ab 90 78 56 34 12
+	var floater64 float64 = 1.234E24         // b2 3c 7a 62 f4 54 f0 44
 	getInMem := func(base unsafe.Pointer, size uintptr) {
-		for i:=0; i<int(size); i++ {
-			pb := (*byte)(unsafe.Pointer(uintptr(base)+uintptr(i)))
+		for i := 0; i < int(size); i++ {
+			pb := (*byte)(unsafe.Pointer(uintptr(base) + uintptr(i)))
 			fmt.Print(strconv.FormatUint(uint64(*pb), 16), " ")
 		}
 		fmt.Println()
 	}
-	// 
+	// when bigger int is converted to smaller int, get the lowest bytes to reprsent new number.
+	// when integer and float are converted to each other, it tries to convert the real value,
+	// if the value is exceeded, e.g., convert float '1.2e30' to int64, the converted value is uncertain.
 	getInMem(unsafe.Pointer(&inter64), unsafe.Sizeof(inter64))
 	getInMem(unsafe.Pointer(&uinter64), unsafe.Sizeof(uinter64))
 	getInMem(unsafe.Pointer(&floater64), unsafe.Sizeof(floater64))
 	fmt.Println()
 
+	// int64 (88 4b 46 46 ae 9e 27 f2) to int16 (88 4b) = 19336 = 0x4b88
 	fmt.Println(int16(inter64))
+	// uint64 (ef cd ab 90 78 56 34 12) to int16 (ef cd) = -12817 = 0xcdef
 	fmt.Println(int16(uinter64))
 	fmt.Println(int16(floater64))
 	fmt.Println()
 
+	// int64 (88 4b 46 46 ae 9e 27 f2) to uint16 (88 4b) = 19336 = 0x4b88
 	fmt.Println(uint16(inter64))
+	// uint64 (ef cd ab 90 78 56 34 12) to uint16 (ef cd) = 52719 = 0xcdef
 	fmt.Println(uint16(uinter64))
 	fmt.Println(uint16(floater64))
 	fmt.Println()
 
+	// int64 (88 4b 46 46 ae 9e 27 f2) to int32 (88 4b 46 46) = 1179011976 = 0x46464b88
 	fmt.Println(int32(inter64))
+	// uint64 (ef cd ab 90 78 56 34 12) to int32 (ef cd ab 90) = -1867788817 = 0x90abcdef
 	fmt.Println(int32(uinter64))
 	fmt.Println(int32(floater64))
 	fmt.Println()
 
+	// int64 (88 4b 46 46 ae 9e 27 f2) to uint32 (88 4b 46 46) = 1179011976 = 0x46464b88
 	fmt.Println(uint32(inter64))
+	// uint64 (ef cd ab 90 78 56 34 12) to uint32 (ef cd ab 90) = 2427178479 = 0x90abcdef
 	fmt.Println(uint32(uinter64))
 	fmt.Println(uint32(floater64))
 	fmt.Println()
@@ -422,4 +434,99 @@ func TestCompareAssignConvert(t *testing.T) {
 
 	fmt.Println(float64(inter64))
 	fmt.Println(float64(uinter64))
+}
+
+func TestMap(t *testing.T) {
+	var a map[string]int
+	var b = make(map[interface{}]interface{})
+	type Namer struct {
+		string
+		int
+	}
+	var c map[Namer]*Namer
+	b["dsad"] = "dsds"
+	b[1] = 2
+	vars := []interface{}{a, b, c}
+	for i := range vars {
+		typer := reflect.TypeOf(vars[i])
+		fmt.Printf("name: %3s, str: %50s, size: %3d, align: %2d, kind: %5s, pkg: %s\n",
+			typer.Name(), typer.String(), typer.Size(), typer.Align(), typer.Kind().String(), typer.PkgPath())
+	}
+	fmt.Println()
+	for i := range vars {
+		typer := reflect.TypeOf(vars[i])
+		fmt.Println("key type: ", typer.Key(), ", key kind:", typer.Key().Kind())
+		fmt.Println("value type: ", typer.Elem(), ", value kind:", typer.Elem().Kind())
+	}
+}
+
+func funcer(inter int, flyer Fly) string {
+	return "haha" + strconv.Itoa(inter)
+}
+
+func TestFunc(t *testing.T) {
+	f1 := func() {}
+	f2 := func(inter ...int) {}
+	f3 := func() (int, string) { return 1, "hahah" }
+	vars := []interface{}{f1, f2, f3, funcer}
+	for i := range vars {
+		typer := reflect.TypeOf(vars[i])
+		fmt.Printf("name: %3s, str: %35s, size: %3d, align: %2d, kind: %5s, pkg: %s\n",
+			typer.Name(), typer.String(), typer.Size(), typer.Align(), typer.Kind().String(), typer.PkgPath())
+	}
+	fmt.Println()
+	// In, NumIn, Out, NumOut, IsVariadic.
+	for i := range vars {
+		typer := reflect.TypeOf(vars[i])
+		fmt.Println("func type: ", typer, ", kind:", typer.Kind(), ", variadic: ", typer.IsVariadic())
+		for i := 0; i < typer.NumIn(); i++ {
+			fmt.Println("In", i, ":", typer.In(i))
+		}
+		for i := 0; i < typer.NumOut(); i++ {
+			fmt.Println("Out", i, ":", typer.Out(i))
+		}
+	}
+}
+
+// method means the func belongs to struct or interface
+func TestStructMethod(t *testing.T) {
+	aircraft := Aircraft{1, "B787"}
+	bird := Bird{"pelican", *elliptic.P224().Params()}
+	p_aircraft := &aircraft
+	p_bird := &bird
+	flyer := reflect.TypeOf([]Fly{}).Elem()
+	facer := reflect.TypeOf([]interface{}{}).Elem()
+	stringer := reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
+
+	vars := []interface{}{aircraft, bird, p_aircraft, p_bird, flyer, stringer, facer}
+	for i := range vars {
+		var typer reflect.Type
+		var ok bool
+		if typer, ok = vars[i].(reflect.Type); ok {
+		} else {
+			typer = reflect.TypeOf(vars[i])
+		}
+		fmt.Println("typer: ", typer, ", kind: ", typer.Kind())
+		// Method(i) only show the public method
+		for i := 0; i < typer.NumMethod(); i++ {
+			method := typer.Method(i)
+			fmt.Printf("id: %d, name: %10s, type: %20s, pkg: %10s\n",
+				method.Index, method.Name, method.Type, method.PkgPath)
+		}
+		fmt.Println()
+	}
+	smet, _ := reflect.TypeOf(p_aircraft).MethodByName("String")
+	fmt.Printf("id: %d, name: %10s, type: %20s, pkg: %10s\n",
+		smet.Index, smet.Name, smet.Type, smet.PkgPath)
+	sret := smet.Func.Call([]reflect.Value{reflect.ValueOf(p_aircraft)})
+	fmt.Println(sret[0].Interface().(string))
+
+	fmet, _ := reflect.TypeOf(p_aircraft).MethodByName("Fly")
+	fmt.Printf("id: %d, name: %10s, type: %20s, pkg: %10s\n",
+		fmet.Index, fmet.Name, fmet.Type, fmet.PkgPath)
+	// use CallSlice to call variadic function, and the variadic parameter should be a slice
+	fret1 := fmet.Func.CallSlice([]reflect.Value{reflect.ValueOf(p_aircraft), reflect.ValueOf([]int{1, 2, 3})})
+	fmt.Println(fret1[0].Interface().(string))
+	fret2 := fmet.Func.Call([]reflect.Value{reflect.ValueOf(p_aircraft)})
+	fmt.Println(fret2[0].Interface().(string))
 }
