@@ -18,6 +18,9 @@ import (
 	"strings"
 	"testing"
 	"util"
+	"crypto/hmac"
+	"crypto/sha1"
+	"crypto/sha256"
 )
 
 func TestParsePrivateKey(t *testing.T) {
@@ -208,10 +211,21 @@ func TestSignAndVerify25519(t *testing.T) {
 }
 
 func TestHashHostname(t *testing.T) {
+	// hashed hostname example:
+	// |1|JlTvbaou69qWu4ApI7cJRTIb+Ro=|OWq2xirrJRIVcI11tkg0a0ZC2BY=
+	// format: base64-ed salt, based64-ed hmac-sha1 of hostname using salt as ramdom key
 	h135 := knownhosts.HashHostname("xzy@10.19.138.135")
 	h181 := knownhosts.HashHostname("xh@10.19.138.181")
 	h186 := knownhosts.HashHostname("taodd@10.19.138.186")
 	fmt.Println("h135: ", h135)
 	fmt.Println("h181: ", h181)
 	fmt.Println("h186: ", h186)
+	salt, _ := base64.StdEncoding.DecodeString("JlTvbaou69qWu4ApI7cJRTIb+Ro=")
+	fmt.Println("salt: ", hex.EncodeToString(salt))
+	hmacer := hmac.New(sha1.New, salt)
+	hmacer.Write([]byte("xzy@10.19.138.135"))
+	sum := hmacer.Sum(nil)
+	fmt.Println("hashed name: ", hex.EncodeToString(sum))
+	decoded, _ := base64.StdEncoding.DecodeString("OWq2xirrJRIVcI11tkg0a0ZC2BY=")
+	fmt.Println("decode hash: ", hex.EncodeToString(decoded))
 }
