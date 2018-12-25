@@ -1,22 +1,29 @@
 package sort
 
-func QuickSort(arr []int, low, high int) {
+import "sort"
+
+type QuickSorter sort.Interface
+
+func QuickSort(arr QuickSorter) {
+	quickSort(arr, 0, arr.Len()-1)
+}
+
+func quickSort(arr QuickSorter, low, high int) {
 	if low < high {
 		pi := partition(arr, low, high)
-		QuickSort(arr, low, pi-1)
-		QuickSort(arr, pi+1, high)
+		quickSort(arr, low, pi-1)
+		quickSort(arr, pi+1, high)
 	}
 }
 
-func partition(arr []int, low, high int) int {
-	pivot := arr[high]
+func partition(arr QuickSorter, low, high int) int {
 	n := low-1
 	for i:=low; i<high; i++ {
-		if arr[i] <= pivot {
+		if arr.Less(i, high) {
 			n++
-			arr[n], arr[i] = arr[i], arr[n]
+			arr.Swap(n, i)
 		}
 	}
-	arr[n+1], arr[high] = arr[high], arr[n+1]
+	arr.Swap(n+1, high)
 	return n+1
 }
