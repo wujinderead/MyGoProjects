@@ -5,19 +5,24 @@ import (
 	"math/rand"
 	"sort"
 	"testing"
+	"time"
 )
 
 func TestQuickSort(t *testing.T) {
-	num := 20
-	permed := rand.Perm(num)
-	ref := make([]int, num)
-	copy(ref, permed)
-	fmt.Println(permed)
-	fmt.Println(ref)
-	QuickSort(sort.IntSlice(permed))
-	fmt.Println(permed)
-	sort.Ints(ref)
-	fmt.Println(ref)
+	rand.Seed(time.Now().Unix())
+	for i:=0; i<10; i++ {
+		num := rand.Int31n(100)
+		permed := rand.Perm(int(num))
+		ref := make([]int, num)
+		copy(ref, permed)
+		//fmt.Println(permed)
+		//fmt.Println(ref)
+		QuickSort(sort.IntSlice(permed))
+		//fmt.Println(permed)
+		sort.Ints(ref)
+		//fmt.Println(ref)
+		fmt.Println(intSlieceEqual(permed, ref))
+	}
 }
 
 func TestPartition(t *testing.T) {

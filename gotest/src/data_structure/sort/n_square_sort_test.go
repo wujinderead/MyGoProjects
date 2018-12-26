@@ -5,19 +5,24 @@ import (
 	"math/rand"
 	"sort"
 	"testing"
+	"time"
 )
 
 func TestSelectionSort(t *testing.T) {
-	num := 20
-	permed := rand.Perm(num)
-	ref := make([]int, num)
-	copy(ref, permed)
-	fmt.Println(permed)
-	fmt.Println(ref)
-	SelectionSort(sort.IntSlice(permed))
-	fmt.Println(permed)
-	sort.Ints(ref)
-	fmt.Println(ref)
+	rand.Seed(time.Now().Unix())
+	for i:=0; i<10; i++ {
+		num := rand.Int31n(100)
+		permed := rand.Perm(int(num))
+		ref := make([]int, num)
+		copy(ref, permed)
+		//fmt.Println(permed)
+		//fmt.Println(ref)
+		SelectionSort(sort.IntSlice(permed))
+		//fmt.Println(permed)
+		sort.Ints(ref)
+		//fmt.Println(ref)
+		fmt.Println(intSlieceEqual(permed, ref))
+	}
 }
 
 func TestStringSelectionSorter(t *testing.T) {
@@ -27,16 +32,20 @@ func TestStringSelectionSorter(t *testing.T) {
 }
 
 func TestInsertionSort(t *testing.T) {
-	num := 20
-	permed := rand.Perm(num)
-	ref := make([]int, num)
-	copy(ref, permed)
-	fmt.Println(permed)
-	fmt.Println(ref)
-	InsertionSort(sort.IntSlice(permed))
-	fmt.Println(permed)
-	sort.Ints(ref)
-	fmt.Println(ref)
+	rand.Seed(time.Now().Unix())
+	for i:=0; i<10; i++ {
+		num := rand.Int31n(100)
+		permed := rand.Perm(int(num))
+		ref := make([]int, num)
+		copy(ref, permed)
+		//fmt.Println(permed)
+		//fmt.Println(ref)
+		InsertionSort(sort.IntSlice(permed))
+		//fmt.Println(permed)
+		sort.Ints(ref)
+		//fmt.Println(ref)
+		fmt.Println(intSlieceEqual(permed, ref))
+	}
 }
 
 func TestStringInsertionSorter(t *testing.T) {
@@ -46,16 +55,20 @@ func TestStringInsertionSorter(t *testing.T) {
 }
 
 func TestBubbleSort(t *testing.T) {
-	num := 20
-	permed := rand.Perm(num)
-	ref := make([]int, num)
-	copy(ref, permed)
-	fmt.Println(permed)
-	fmt.Println(ref)
-	BubbleSort(sort.IntSlice(permed))
-	fmt.Println(permed)
-	sort.Ints(ref)
-	fmt.Println(ref)
+	rand.Seed(time.Now().Unix())
+	for i:=0; i<10; i++ {
+		num := rand.Int31n(100)
+		permed := rand.Perm(int(num))
+		ref := make([]int, num)
+		copy(ref, permed)
+		//fmt.Println(permed)
+		//fmt.Println(ref)
+		BubbleSort(sort.IntSlice(permed))
+		//fmt.Println(permed)
+		sort.Ints(ref)
+		//fmt.Println(ref)
+		fmt.Println(intSlieceEqual(permed, ref))
+	}
 }
 
 func TestStringBubbleSorter(t *testing.T) {

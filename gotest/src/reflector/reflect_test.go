@@ -324,7 +324,6 @@ func TestFuncInterfaceStruct(t *testing.T) {
 	}
 	fmt.Println()
 
-	// TODO: how to instantiate an interface, make a variable that reflect.TypeOf(var).Kind()==Interface?
 	// it's a tricky way, make *Interface or []Interface, and get its Elem()
 	// for example: var flyer = reflect.TypeOf((*Fly)(nil)).Elem()
 	var flyer = reflect.TypeOf([]Fly{}).Elem()

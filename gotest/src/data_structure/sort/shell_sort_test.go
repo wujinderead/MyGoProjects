@@ -9,17 +9,20 @@ import (
 )
 
 func TestShellSort(t *testing.T) {
-	num := 20
 	rand.Seed(time.Now().Unix())
-	permed := rand.Perm(num)
-	ref := make([]int, num)
-	copy(ref, permed)
-	fmt.Println(permed)
-	fmt.Println(ref)
-	ShellSort(sort.IntSlice(permed))
-	fmt.Println(permed)
-	sort.Ints(ref)
-	fmt.Println(ref)
+	for i:=0; i<10; i++ {
+		num := rand.Int31n(100)
+		permed := rand.Perm(int(num))
+		ref := make([]int, num)
+		copy(ref, permed)
+		//fmt.Println(permed)
+		//fmt.Println(ref)
+		ShellSort(sort.IntSlice(permed))
+		//fmt.Println(permed)
+		sort.Ints(ref)
+		//fmt.Println(ref)
+		fmt.Println(intSlieceEqual(permed, ref))
+	}
 }
 
 func TestStringShellSorter(t *testing.T) {
