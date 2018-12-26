@@ -2,26 +2,26 @@ package sort
 
 import "fmt"
 
-type stringQuickSorter struct {
+type stringSorter struct {
 	runes []rune
 }
 
-func newStringQuickSorter(str string) *stringQuickSorter {
-	return &stringQuickSorter{[]rune(str)}
+func newStringSorter(str string) *stringSorter {
+	return &stringSorter{[]rune(str)}
 }
 
-func (runes *stringQuickSorter) Less(i, j int) bool {
+func (runes *stringSorter) Less(i, j int) bool {
 	return runes.runes[i] < runes.runes[j]
 }
 
-func (runes *stringQuickSorter) Swap(i, j int) {
+func (runes *stringSorter) Swap(i, j int) {
 	runes.runes[i], runes.runes[j] = runes.runes[j], runes.runes[i]
 }
 
-func (runes *stringQuickSorter) Len() int {
+func (runes *stringSorter) Len() int {
 	return len(runes.runes)
 }
 
-func (runes *stringQuickSorter) String() string {
+func (runes *stringSorter) String() string {
 	return string(runes.runes) + " " + fmt.Sprint(runes.runes)
 }

@@ -1,10 +1,10 @@
 package sort
 
 import (
-	"testing"
 	"fmt"
 	"math/rand"
 	"sort"
+	"testing"
 )
 
 func TestQuickSort(t *testing.T) {
@@ -28,7 +28,21 @@ func TestPartition(t *testing.T) {
 }
 
 func TestStringQuickSorter(t *testing.T) {
-	sorter := newStringQuickSorter("摄影语言爱好者的学习家园。")
+	sorter := newStringSorter("摄影语言爱好者的学习家园。")
 	QuickSort(sorter)
 	fmt.Println(sorter)
+}
+
+// test boundary values, i.e., arrays with small length
+func TestBoundaryQuickSort(t *testing.T) {
+	zero := []int{}
+	one := []int{3}
+	two := []int{3, 2}
+	two_s := []int{2, 3}
+	three := []int{2, 1, 3}
+	arrs := [][]int{zero, one, two, two_s, three}
+	for i := range arrs {
+		QuickSort(sort.IntSlice(arrs[i]))
+		fmt.Println(arrs[i])
+	}
 }
