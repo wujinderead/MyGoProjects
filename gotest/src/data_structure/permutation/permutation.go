@@ -1,6 +1,7 @@
 package permutation
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -26,5 +27,77 @@ func Shuffle(n int, swap func(i, j int)) {
 	}
 	for i:=n-1; i>0; i-- {
 		swap(i, rander.Intn(i+1))
+	}
+}
+
+func PermuteNonDuplicated(arr []interface{}) {
+	// to detect duplicated
+	isDuplicated := func(arr []interface{}, left, right int) bool {
+		for i:=left; i<right; i++ {
+			if arr[i] == arr[right] {
+				return true
+			}
+		}
+		return false
+	}
+	var permute func([]interface{}, int)
+	permute = func(arr []interface{}, step int) {
+		if step == len(arr)-1 {
+			fmt.Println(arr)
+			return
+		}
+ 		for i:=step; i<len(arr); i++ {
+ 			if isDuplicated(arr, step, i) {
+ 				continue
+			}
+			swap(arr, step, i)
+			permute(arr, step+1)
+			swap(arr, step, i)
+		}
+	}
+	permute(arr, 0)
+}
+
+func swap(arr []interface{}, i, j int) {
+	arr[i], arr[j] = arr[j], arr[i]
+}
+
+func Combine(arr []interface{}, num int) {
+	if num<0 || num>len(arr) {
+		panic("n is out of range")
+	}
+	var combine func([]interface{}, int, int)
+	com := make([]interface{}, num)
+	combine = func(arr []interface{}, start, n int) {
+		if n==0 {
+			fmt.Println(com)
+			return
+		}
+		for i:=start; i<=len(arr)-n; i++ {
+			com[num-n] = arr[i]
+			combine(arr, i+1, n-1)
+		}
+	}
+	combine(arr, 0, num)
+}
+
+func CombineStack(arr []interface{}, num int) {
+	if num<1 || num>len(arr) {
+		panic("n is out of range")
+	}
+	stack := make([]int, num)
+	stack[0] = 0
+	head := 0   // head pointer of stack
+	for head>=0 {
+		if head == num-1 { // stack is full
+			fmt.Println(stack)
+			head--  // pop
+			continue
+		}
+		if stack[head]<len(arr) {
+			prev := stack[head]
+			head++
+			stack[head]=prev+1
+		}
 	}
 }

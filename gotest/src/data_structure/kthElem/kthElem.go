@@ -16,7 +16,7 @@ type Array interface {
 // method1:
 // quick sort and return the kth elem
 func FindKthElemQuickSort(arr Array, k int) interface{} {
-	if k < 1 && k > arr.Len() {
+	if k < 1 || k > arr.Len() {
 		panic("k out of range")
 	}
 	sort.Sort(arr)
@@ -32,7 +32,7 @@ func FindKthElemQuickSort(arr Array, k int) interface{} {
 // quick select:
 // only sort the partition that contains the kth elem, use random pivot to overcome worst case (already sorted)
 func FindKthElemQuickSelect(arr Array, k int) interface{} {
-	if k < 1 && k > arr.Len() {
+	if k < 1 || k > arr.Len() {
 		panic("k out of range")
 	}
 	var partition = func(arr Array, low, high int) int {

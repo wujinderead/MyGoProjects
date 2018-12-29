@@ -55,3 +55,35 @@ func TestShuffle(t *testing.T) {
 		fmt.Println(string(ints))
 	}
 }
+
+func TestPermute(t *testing.T) {
+	PermuteNonDuplicated([]interface{}{1, 2, 3, 4})
+	fmt.Println()
+	PermuteNonDuplicated([]interface{}{1, 2, 3, 3})
+	fmt.Println()
+	PermuteNonDuplicated([]interface{}{1, 2, 3})
+	fmt.Println()
+	PermuteNonDuplicated([]interface{}{1})
+	fmt.Println()
+	PermuteNonDuplicated([]interface{}{1, 1})
+	fmt.Println()
+	PermuteNonDuplicated([]interface{}{1, 2})
+	fmt.Println()
+	PermuteNonDuplicated([]interface{}{})
+	fmt.Println()
+}
+
+func TestCombine(t *testing.T) {
+	Combine([]interface{}{1, 2, 3, 4}, 2)
+	fmt.Println()
+	Combine([]interface{}{1, 2, 3, 4}, 1)
+	fmt.Println()
+	Combine([]interface{}{1, 2, 3, 4, 5}, 3)
+	fmt.Println()
+	Combine([]interface{}{1, 2}, 2)
+	fmt.Println()
+	Combine([]interface{}{1, 2}, 1)
+	fmt.Println()
+	Combine([]interface{}{}, 0)
+	fmt.Println()
+}
