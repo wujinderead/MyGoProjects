@@ -9,12 +9,12 @@ import (
 var rander = rand.New(rand.NewSource(time.Now().Unix()))
 
 func PermN(n int) []int {
-	if n<1 {
+	if n < 1 {
 		return []int{}
 	}
 	ans := make([]int, n)
-	for i:=0; i<n; i++ {
-		j := rander.Intn(i+1)
+	for i := 0; i < n; i++ {
+		j := rander.Intn(i + 1)
 		ans[i] = ans[j]
 		ans[j] = i
 	}
@@ -22,10 +22,10 @@ func PermN(n int) []int {
 }
 
 func Shuffle(n int, swap func(i, j int)) {
-	if n<1 {
+	if n < 1 {
 		return
 	}
-	for i:=n-1; i>0; i-- {
+	for i := n - 1; i > 0; i-- {
 		swap(i, rander.Intn(i+1))
 	}
 }
@@ -33,7 +33,7 @@ func Shuffle(n int, swap func(i, j int)) {
 func PermuteNonDuplicated(arr []interface{}) {
 	// to detect duplicated
 	isDuplicated := func(arr []interface{}, left, right int) bool {
-		for i:=left; i<right; i++ {
+		for i := left; i < right; i++ {
 			if arr[i] == arr[right] {
 				return true
 			}
@@ -46,9 +46,9 @@ func PermuteNonDuplicated(arr []interface{}) {
 			fmt.Println(arr)
 			return
 		}
- 		for i:=step; i<len(arr); i++ {
- 			if isDuplicated(arr, step, i) {
- 				continue
+		for i := step; i < len(arr); i++ {
+			if isDuplicated(arr, step, i) {
+				continue
 			}
 			swap(arr, step, i)
 			permute(arr, step+1)
@@ -63,41 +63,20 @@ func swap(arr []interface{}, i, j int) {
 }
 
 func Combine(arr []interface{}, num int) {
-	if num<0 || num>len(arr) {
+	if num < 0 || num > len(arr) {
 		panic("n is out of range")
 	}
 	var combine func([]interface{}, int, int)
 	com := make([]interface{}, num)
 	combine = func(arr []interface{}, start, n int) {
-		if n==0 {
+		if n == 0 {
 			fmt.Println(com)
 			return
 		}
-		for i:=start; i<=len(arr)-n; i++ {
+		for i := start; i <= len(arr)-n; i++ {
 			com[num-n] = arr[i]
 			combine(arr, i+1, n-1)
 		}
 	}
 	combine(arr, 0, num)
-}
-
-func CombineStack(arr []interface{}, num int) {
-	if num<1 || num>len(arr) {
-		panic("n is out of range")
-	}
-	stack := make([]int, num)
-	stack[0] = 0
-	head := 0   // head pointer of stack
-	for head>=0 {
-		if head == num-1 { // stack is full
-			fmt.Println(stack)
-			head--  // pop
-			continue
-		}
-		if stack[head]<len(arr) {
-			prev := stack[head]
-			head++
-			stack[head]=prev+1
-		}
-	}
 }
