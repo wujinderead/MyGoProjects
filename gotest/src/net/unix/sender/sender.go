@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -12,44 +11,48 @@ import (
 )
 
 func main() {
-	Send("lgq", 3)
+	Send("xzy", 3)
 }
 
 func Send(name string, sleep int64) {
 	conn, err := net.Dial("unix", "src/net/unix/test.sock")
 	if err != nil {
-		log.Fatal("Dial error", err)
+		fmt.Println("Dial error:", err)
+		return
 	}
-	defer func() {
-		err := conn.Close()
-		if err != nil {
-			fmt.Println("close conn err:", err)
-		} else {
-			fmt.Println("conn closed.")
-		}
-	}()
 
 
-	go func() {
-		sigc := make(chan os.Signal, 1)
-		signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
-		sig := <-sigc
-		log.Printf("Caught signal %s: shutting down.", sig)
-		os.Exit(0)
-	}()
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
 
 	go reader(conn)
-	i := 0
-	for {
+	looper: for i:=0; i>=0; i++ {
+		// since there is no block in loop, we can we shutdown hook in main goroutine by
+		// 'select' to get interrupt signal and break the loop.
+		select {
+		case sig := <-sigc:
+			fmt.Printf("Caught signal %s: shutting down.\n", sig)
+			break looper
+		default:
+		}
+
+		// write to server
 		msg := fmt.Sprintf("my name is %s-%d", name, i)
-		i++
 		_, err := conn.Write([]byte(msg))
 		if err != nil {
-			log.Fatal("Write error:", err)
+			fmt.Println("Write error:", err)
 			break
 		}
 		println("Client sent:", msg)
 		time.Sleep(time.Duration(sleep * int64(time.Second)))
+	}
+
+	// close the conn when out of loop
+	err = conn.Close()
+	if err != nil {
+		fmt.Println("close conn err:", err)
+	} else {
+		fmt.Println("conn closed.")
 	}
 }
 
