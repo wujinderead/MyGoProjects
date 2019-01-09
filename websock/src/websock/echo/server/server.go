@@ -11,7 +11,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"websock/src/websock/echo"
+	"websock/src/websock/util"
 )
 
 var addr = flag.String("addr", "localhost:8080", "http service address")
@@ -24,10 +24,10 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("upgrade error:", err)
 		return
 	}
-	defer echo.Close("server conn", conn)
+	defer util.Close("server conn", conn)
 	fmt.Println("server local addr:", conn.LocalAddr(), ", remote addr:", conn.RemoteAddr())
 	conn.SetCloseHandler(func(code int, text string) error {
-		fmt.Printf("[server] remote: %s closed.\n", echo.ToString(conn.RemoteAddr()))
+		fmt.Printf("[server] remote: %s closed.\n", util.ToString(conn.RemoteAddr()))
 		return nil
 	})
 	for {
@@ -36,7 +36,7 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("read error:", err)
 			break
 		}
-		fmt.Printf("recv: %s, from: %s\n", message, echo.ToString(conn.RemoteAddr()))
+		fmt.Printf("recv: %s, from: %s\n", message, util.ToString(conn.RemoteAddr()))
 		err = conn.WriteMessage(mt, message)
 		if err != nil {
 			log.Println("write error:", err)

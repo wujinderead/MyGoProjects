@@ -1,4 +1,4 @@
-package echo
+package util
 
 import (
 	"fmt"

@@ -13,7 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"time"
-	"websock/src/websock/echo"
+	"websock/src/websock/util"
 )
 
 var addr = flag.String("addr", "localhost:8080", "http service address")
@@ -32,10 +32,10 @@ func main() {
 	if err != nil {
 		fmt.Println("dial error:", err)
 	}
-	defer echo.Close("connection", conn)
+	defer util.Close("connection", conn)
 	fmt.Println("dial respond header:", response.Header)
 	fmt.Printf("dial success, local addr: %s, remote addr: %s\n",
-		echo.ToString(conn.LocalAddr()), echo.ToString(conn.RemoteAddr()))
+		util.ToString(conn.LocalAddr()), util.ToString(conn.RemoteAddr()))
 
 	done := make(chan struct{})
 
