@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
+	"unsafe"
 )
 
 var strs = []string{
@@ -143,4 +145,27 @@ func TestChanBlock(t *testing.T) {
 	go printer(5, true, 'c', chan3, chan1)
 	chan1 <- 'm'
 	fmt.Println(<-exit)
+}
+
+func TestEmptyStruct(t *testing.T) {
+	// the size for empty struct is 0, and empty struct 'aa' and 'cc' are actually the same.
+	// so use make(chan struct{}) rather than make(chan int) when you use channel for notification
+	// other than transfer data. it can avoid allocate memory.
+	aa := struct{}{}
+	bb := struct{ i int }{2}
+	cc := struct{}{}
+	fmt.Println(unsafe.Sizeof(aa))
+	fmt.Println(unsafe.Sizeof(bb))
+	fmt.Println(unsafe.Sizeof(cc))
+	fmt.Printf("%p\n", &aa)
+	fmt.Printf("%p\n", &bb)
+	fmt.Printf("%p\n", &cc)
+	ch := make(chan struct{})
+	go func() {
+		time.Sleep(time.Second)
+		fmt.Println("i exit")
+		ch <- struct{}{}
+	}()
+	<-ch
+	fmt.Println("main exit")
 }
