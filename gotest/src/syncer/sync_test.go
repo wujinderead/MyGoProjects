@@ -1,4 +1,4 @@
-package stdlib
+package syncer
 
 import (
 	"fmt"
@@ -168,4 +168,43 @@ func TestEmptyStruct(t *testing.T) {
 	}()
 	<-ch
 	fmt.Println("main exit")
+}
+
+// result:
+// 0 true   // send 10 times every 1s, read 12 times every 1.5s
+// 1 true
+// 2 true
+// 3 true
+// 4 true
+// 5 true
+// sender close
+// 6 true   // after close, it can still read buffered elements and return true
+// 7 true
+// 8 true
+// 9 true
+// 0 false  // if no elements return zero elements and false
+// 0 false
+func TestChanClose(t *testing.T) {
+	c := make(chan int, 5)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		for i:=0; i<10; i++ {
+			time.Sleep(1*time.Second)
+			c <- i
+		}
+		close(c)
+		fmt.Println("sender close")
+		wg.Done()
+	}()
+	go func() {
+		// read every 1.5s
+		for i:=0; i<12; i++ {
+			time.Sleep(time.Second+time.Second/2)
+			n, ok := <- c
+			fmt.Println(n, ok)
+		}
+		wg.Done()
+	}()
+	wg.Wait()
 }
