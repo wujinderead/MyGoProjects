@@ -15,16 +15,17 @@ func TestHmac(t *testing.T) {
 	var hasher = sha256.New()
 	var blockSize = hasher.BlockSize()
 
-	//Keys longer than blockSize are shortened by hashing them
+	// Keys longer than blockSize are shortened by hashing them
 	if len(key) > blockSize {
 		fmt.Println("longer")
 		hasher.Write(key)
 		key = hasher.Sum(nil) //Key becomes outputSize bytes long
 	}
 
+	// keys shorter than blockSize are padded key with zeros to blockSize long
 	if len(key) < blockSize {
 		fmt.Println("shorter")
-		key = append(key, make([]byte, blockSize-len(key))...) //pad key with zeros to make it blockSize bytes long
+		key = append(key, make([]byte, blockSize-len(key))...)
 	}
 
 	fmt.Printf("kpd: %x\n", key)
@@ -48,5 +49,3 @@ func TestHmac(t *testing.T) {
 	hma := hmacer.Sum(nil)
 	fmt.Printf("hma: %x\n", hma)
 }
-
-
