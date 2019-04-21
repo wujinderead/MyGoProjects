@@ -59,8 +59,8 @@ func TestTime(t *testing.T) {
 	isoyear, isoweek := now.ISOWeek()
 	fmt.Println("iso year: ", isoyear, " ,isoweek: ", isoweek)
 	fmt.Println("unix: ", now.Unix(), " , unix nano: ", now.UnixNano())
-	fmt.Println("format: ", "2006-01-02 15:04:05", ", formatted: ", now.Format("2006-01-02 3:04:05 PM"))
-	fmt.Println("format: ", "2006-01-02 3:04:05 PM", ", formatted: ", now.Format("2006-01-02 15:04:05"))
+	fmt.Println("format: ", "2006-01-02 15:04:05", ", formatted: ", now.Format("2006-01-02 15:04:05"))
+	fmt.Println("format: ", "2006-01-02 3:04:05 PM", ", formatted: ", now.Format("2006-01-02 3:04:05 PM"))
 	fmt.Println("format: ", time.RFC3339, ", formatted: ", now.Format(time.RFC3339))
 	date := time.Date(2019, time.October, 31, 4, 41, 7, 123456789, time.Now().Location())
 	fmt.Println("date: ", date, date.Format("2006-01-02 3:04:05 PM"))
@@ -110,11 +110,15 @@ func TestAfter(t *testing.T) {
 }
 
 func TestTick(t *testing.T) {
-	fmt.Println(time.Now())
+	now := time.Now()
+	fmt.Println(now)
 	ch := time.Tick(2*time.Second)
 	for {
 		ti := <- ch
 		fmt.Println(ti)
+		if ti.Sub(now) > 10*time.Second {
+			break
+		}
 	}
 }
 
@@ -148,7 +152,7 @@ func TestTicker(t *testing.T) {
 		ti := <- ticker.C
 		fmt.Println(ti)
 	}
-	time.Sleep(3*time.Second) // if time.Sleep(3*time.Second), the last receive will block
+	time.Sleep(3*time.Second) // if time.Sleep(1*time.Second), the last receive will block
 	ticker.Stop()
 	fmt.Println(time.Now())
 	fmt.Println("last: ", <-ticker.C)
