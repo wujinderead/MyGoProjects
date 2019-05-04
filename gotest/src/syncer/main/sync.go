@@ -16,7 +16,9 @@ func main() {
 	//testCond()
 	//testAtomic()
 	//testAtomicValue()
-	testAtomicDifferentType()
+	//testAtomicDifferentType()
+	//testRWMutex()
+	testPool()
 }
 
 func testOnce() {
@@ -187,7 +189,7 @@ func testAtomicValue() {
 			holder.Store(pojo{rand.Int(), "aaa"})
 		}()
 		go func() {
-			holder.Load()
+			_ = holder.Load()
 		}()
 	}
 	time.Sleep(100*time.Millisecond)
@@ -203,4 +205,88 @@ func testAtomicDifferentType() {
 	v.Store(a{1, "bbb"})
 	v.Store(a{2, "ccc"})
 	v.Store(&a{3, "ddd"})  // panic here, value should be consistent with previous type
+}
+
+func testRWMutex() {
+	var mu sync.RWMutex
+	// 3r 1w 3r 1w
+	for i:=0; i<3; i++ {
+		go func() {
+			mu.RLock()
+			fmt.Println("r1 lock at", time.Now().UnixNano())
+			time.Sleep(time.Second)
+			fmt.Println("r1 unlock at", time.Now().UnixNano())
+			mu.RUnlock()
+		}()
+	}
+	time.Sleep(time.Millisecond)
+	for i:=0; i<2; i++ {
+		go func() {
+			mu.Lock()
+			fmt.Println("w lock at", time.Now().UnixNano())
+			time.Sleep(time.Second)
+			fmt.Println("w unclok at", time.Now().UnixNano())
+			mu.Unlock()
+		}()
+	}
+	time.Sleep(time.Millisecond)
+	for i:=0; i<3; i++ {
+		go func() {
+			mu.RLock()
+			fmt.Println("r2 lock at", time.Now().UnixNano())
+			time.Sleep(time.Second)
+			fmt.Println("r2 unlock at", time.Now().UnixNano())
+			mu.RUnlock()
+		}()
+	}
+	time.Sleep(4*time.Second)
+}
+
+func testPool() {
+	runtime.GOMAXPROCS(8)
+	type pojo struct {
+		a int
+		b string
+	}
+	rander := rand.New(rand.NewSource(time.Now().UnixNano()))
+	pojoPool := new(sync.Pool)
+	bufPool := new(sync.Pool)
+	var wg sync.WaitGroup
+	wg.Add(20)
+	for i:=0; i<10; i++ {
+		go func(i int) {
+			pojop := &pojo{rander.Int(), "aaa"}
+			buf := make([]byte, 1024)
+			fmt.Printf("G%d put pojo: %p, buf: %p\n", i, pojop, &buf)
+			pojoPool.Put(pojop)
+			bufPool.Put(&buf)
+			time.Sleep(time.Second)
+			pojoI := pojoPool.Get()
+			bufI := bufPool.Get()
+			if pojoI != nil {
+				fmt.Printf("G%d get pojo: %p\n", i, pojoI.(*pojo))
+			}
+			if bufI != nil {
+				fmt.Printf("G%d get buf: %p\n", i, bufI.(*[]byte))
+			}
+			fmt.Println("G", i, pojoI==nil, bufI==nil)
+			wg.Done()
+		}(i)
+	}
+	for i:=10; i<20; i++ {
+		go func(i int) {
+			time.Sleep(time.Second)
+			pojoI := pojoPool.Get()
+			bufI := bufPool.Get()
+			if pojoI != nil {
+				fmt.Printf("G%d get pojo: %p\n", i, pojoI.(*pojo))
+			}
+			if bufI != nil {
+				fmt.Printf("G%d get buf: %p\n", i, bufI.(*[]byte))
+			}
+			fmt.Println("G", i, pojoI==nil, bufI==nil)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
 }
