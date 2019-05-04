@@ -244,3 +244,23 @@ func TestTypeEqual(t *testing.T) {
 	ef4 := (*eface)(unsafe.Pointer(&bird4))
 	fmt.Printf("ef4 *type: %p, hash: %d\n", ef4._type, ef4._type.hash)
 }
+
+func TestInterfaceData(t *testing.T) {
+	var bird1 flyable = &bird{-2, 123, "ccc"}
+	type iface1 struct {
+		_type *_type
+		data  unsafe.Pointer
+	}
+	type iface2 struct {
+		typ   unsafe.Pointer
+		data  unsafe.Pointer
+	}
+	up1 := *(*unsafe.Pointer)(unsafe.Pointer(uintptr(unsafe.Pointer(&bird1))+uintptr(8)))
+	up2 := (*iface1)(unsafe.Pointer(&bird1)).data
+	up3 := (*iface2)(unsafe.Pointer(&bird1)).data
+	// pointer of fixed-sized array can index directly
+	// e.g., a = &[3]int{1,2,3}, b = a[2]
+	up4 := (*[2]unsafe.Pointer)(unsafe.Pointer(&bird1))[1]
+	fmt.Println(up1, up2, up3, up4)
+	fmt.Println(up1==up2, up2==up3, up3==up4)
+}
