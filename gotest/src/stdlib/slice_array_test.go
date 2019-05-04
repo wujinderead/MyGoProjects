@@ -3,6 +3,8 @@ package stdlib
 import (
 	"sync"
 	"testing"
+	"fmt"
+	"reflect"
 )
 
 func TestAppend(t *testing.T) {
@@ -40,4 +42,13 @@ func TestAppend1(t *testing.T) {
 		t.Log(len(z))
 	}()
 	wg.Wait()
+}
+
+func TestFixedSizeArray(t *testing.T)  {
+	a := []int{1,2,3}
+	b := [3]int{1,2,3}
+	bp := &b
+	c := [...]int{1,2,3}    // fixed-size array not specify length
+	_ = bp[1]               // pointer of fixed size array can be indexed directly
+	fmt.Println(reflect.TypeOf(a), reflect.TypeOf(b), reflect.TypeOf(b), reflect.TypeOf(c))
 }
