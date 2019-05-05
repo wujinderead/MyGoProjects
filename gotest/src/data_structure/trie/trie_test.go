@@ -75,9 +75,34 @@ func TestTrieMap(t *testing.T) {
 		//fmt.Println(k, "=", v, tv.(int))
 	}
 
-	// todo conitnue
-	// width search
+	// breadth first search to display trie
+	type node struct {
+		tnode *TrieNode
+		tier int
+		char string
+	}
 	ll := list.New()
 	al, _ := trie.Get("al")
-	ll.PushBack(al)
+	ll.PushBack(&node{al, 0, "al"})
+	curTier := 0
+	for ll.Len()>0 {
+		front := ll.Front()
+		ll.Remove(front)
+		cur := front.Value.(*node)
+		if cur.tier>curTier {
+			curTier = cur.tier
+			fmt.Println()
+		}
+		if cur.tnode.field!=nil {
+			fmt.Print(cur.char, " ", cur.tnode.field, ", ")
+		} else {
+			fmt.Print(cur.char, ", ")
+		}
+		for i, child := range cur.tnode.children {
+			if child != nil {
+				ll.PushBack(&node{child, curTier+1, cur.char+string(rune(i+'a'))})
+			}
+		}
+	}
+	fmt.Println()
 }
