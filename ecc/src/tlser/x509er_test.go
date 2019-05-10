@@ -29,12 +29,16 @@ openssl genrsa -out client.key 2048
 openssl req -new -key client.key -subj "/CN=clienter" -out client.csr
 openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 50000
 
+# ed25519 generate key and cert
 # openssl version >= 1.1.1
 openssl genpkey -algorithm ed25519 -out ed25519.ca.key
 openssl genpkey -algorithm ed25519 -out ed25519.server.key
 openssl req -x509 -new -nodes -key ed25519.ca.key -days 50000 -out ed25519.ca.crt -subj "/CN=CA25519"
 openssl req -new -key ed25519.server.key -out ed25519.server.csr -subj "/CN=Server25519" -config openssl.conf
 openssl x509 -req -in ed25519.server.csr -CA ed25519.ca.crt -CAkey ed25519.ca.key -CAcreateserial -out ed25519.server.crt -days 730 -extensions v3_req -extfile openssl.conf
+
+# generate ec key
+openssl ecparam -genkey -name secp384r1 -out ec.ca.key
 */
 
 func TestCert(t *testing.T) {
@@ -227,6 +231,57 @@ func TestParseEd25519KeyCert(t *testing.T) {
 	}
 	displayCert(serverCert)
 	fmt.Println()
+}
+
+func TestParseEcdsaKeyCert(t *testing.T) {
+	// parse rsa key
+	caKeyPem := readFile("../../keys/ec.ca.key")
+	_, rest := pem.Decode([]byte(caKeyPem))
+	block, _ := pem.Decode([]byte(rest))
+	caKey, err := x509.ParseECPrivateKey(block.Bytes)
+	if err != nil {
+		fmt.Println("parse key err:", err)
+		return
+	}
+	fmt.Println("rsa.D:", hex.EncodeToString(caKey.D.Bytes()))
+	fmt.Println()
+
+	// parse ca certificate
+	caCertPem := readFile("../../keys/ec.ca.crt")
+	block, _ = pem.Decode([]byte(caCertPem))
+	caCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		fmt.Println("parse cert err:", err)
+		return
+	}
+	displayCert(caCert)
+	fmt.Println()
+
+	// parse client certificate request
+	serverCsrPem := readFile("../../keys/ec.server.csr")
+	block, _ = pem.Decode([]byte(serverCsrPem))
+	serverCsr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil {
+		fmt.Println("parse cert requset err:", err)
+		return
+	}
+	displayCertReq(serverCsr)
+	fmt.Println()
+
+	// parse client certificate
+	serverCertPem := readFile("../../keys/ec.server.crt")
+	block, _ = pem.Decode([]byte(serverCertPem))
+	serverCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		fmt.Println("parse cert err:", err)
+		return
+	}
+	displayCert(serverCert)
+	fmt.Println()
+
+	fmt.Println("check csr signature:", serverCsr.CheckSignature())
+	fmt.Println("check ca signed server cert:", caCert.CheckSignature(
+		caCert.SignatureAlgorithm, serverCert.RawTBSCertificate, serverCert.Signature))
 }
 
 func TestParseGoogleCert(t *testing.T) {
