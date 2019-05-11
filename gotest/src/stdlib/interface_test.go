@@ -52,27 +52,23 @@ func TestNilInterface(t *testing.T) {
 }
 
 func TestNilInterface1(t *testing.T) {
-	// b is nil
-	var b interface{} = nil
-	fmt.Println(reflect.TypeOf(b))
-	fmt.Println(b == nil)
-	fmt.Println()
-
-	// a is not nil, a.type is *int, a.value is nil
-	var p *int = nil
-	var a interface{} = p
-	if v, ok := a.(*int); ok {
-		fmt.Println("a=", a, ", a == nil ?, ", a==nil)
-		fmt.Println(reflect.TypeOf(a))
-		fmt.Println(v)
-	}
-	fmt.Println()
-
-	var c interface{} = new(int16)
-	if v, ok := c.(*int16); ok {
-		fmt.Println(reflect.TypeOf(c))
-		fmt.Println(v)
-		fmt.Println(*v)
-	}
-	fmt.Println()
+	var a *string = nil        // a, b, c, d == nil
+	var b []string = nil
+	var c *int = nil
+	var d map[int]int = nil
+	var ai interface{} = a     // ai, bi, ci, di != nil (interface struct is non-nil, only data is nil)
+	var bi interface{} = b
+	var ci interface{} = c
+	var di interface{} = d
+	var ei interface{} = nil   // ei ==nil
+	fmt.Println(a==nil, b==nil, c==nil, d==nil)
+	fmt.Println(ai==nil, bi==nil, ci==nil, di==nil, ei==nil)
+	// *string, []string, *int, map[int]int; type is retained
+	fmt.Println(reflect.TypeOf(a), reflect.TypeOf(b),
+		reflect.TypeOf(c), reflect.TypeOf(d))
+	// *string, []string, *int, map[int]int; type is retained
+	fmt.Println(reflect.TypeOf(ai), reflect.TypeOf(bi),
+		reflect.TypeOf(ci), reflect.TypeOf(di), reflect.TypeOf(ei))
+	// type is <nil>
+	fmt.Println(reflect.TypeOf(ei))
 }

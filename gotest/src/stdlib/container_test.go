@@ -92,14 +92,14 @@ func TestHeap(t *testing.T) {
 	pop = heap.Remove(&ints, 7)
 	fmt.Println("rmv", pop, ":", ints)
 
-	[]int(ints)[6] = cands[3]
+	([]int)(ints)[6] = cands[3]
 	heap.Fix(&ints, 6)
 	fmt.Println("fix", cands[3], ":", ints)
 
 	pop = heap.Remove(&ints, 5)
 	fmt.Println("rmv", pop, ":", ints)
 
-	[]int(ints)[4] = cands[4]
+	([]int(ints))[4] = cands[4]
 	heap.Fix(&ints, 4)
 	fmt.Println("fix", cands[4], ":", ints)
 }
