@@ -9,10 +9,10 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net"
+	"reflect"
 	"testing"
 	"time"
-	"reflect"
-	"net"
 )
 
 /*
@@ -24,8 +24,7 @@ openssl req -x509 -new -nodes -key ca.key -days 50000 -out ca.crt -subj "/CN=Sel
 openssl genrsa -out client.key 2048
 openssl req -new -key client.key -subj "/CN=clienter" -out client.csr
 openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 50000
- */
-
+*/
 
 func TestCert(t *testing.T) {
 	// generate ca rsa key
@@ -53,13 +52,13 @@ func TestCert(t *testing.T) {
 		Subject: pkix.Name{
 			Organization: []string{"SelfCA"},
 		},
-		NotBefore: time.Now().Add(-time.Hour*24*365),
-		NotAfter:  time.Now().Add(time.Hour*24*365),
+		NotBefore: time.Now().Add(-time.Hour * 24 * 365),
+		NotAfter:  time.Now().Add(time.Hour * 24 * 365),
 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 
 	caCertBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, caKey.Public(), caKey)
@@ -89,15 +88,15 @@ func TestCert(t *testing.T) {
 		Subject: pkix.Name{
 			Organization: []string{"MyServer"},
 		},
-		NotBefore: time.Now().Add(-time.Hour*24*365),
-		NotAfter:  time.Now().Add(time.Hour*24*365),
+		NotBefore: time.Now().Add(-time.Hour * 24 * 365),
+		NotAfter:  time.Now().Add(time.Hour * 24 * 365),
 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		IsCA: false,
-		IPAddresses: []net.IP{net.ParseIP("10.19.138.22"), net.ParseIP("10.19.138.135")},
-		DNSNames: []string{"dog.com", "leopard.com"},
+		IsCA:                  false,
+		IPAddresses:           []net.IP{net.ParseIP("10.19.138.22"), net.ParseIP("10.19.138.135")},
+		DNSNames:              []string{"dog.com", "leopard.com"},
 	}
 
 	serverCertBytes, err := x509.CreateCertificate(rand.Reader, &serverTemplate, caCert, serverKey.Public(), caKey)
@@ -113,7 +112,7 @@ func TestCert(t *testing.T) {
 	displayCert(serverCert)
 }
 
-func TestParse(t *testing.T) {
+func TestParseRsaKeyCert(t *testing.T) {
 	// parse rsa key
 	rsaKeyPem := `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAsKS8zjC7W/nL4jzhmYsD31/9zGt2ykU2fvHVkhL/f3h1+1bI
@@ -306,4 +305,93 @@ func displayCertReq(csr *x509.CertificateRequest) {
 	fmt.Println("emails:", csr.EmailAddresses)
 	fmt.Println("ips:", csr.IPAddresses)
 	fmt.Println("uris:", csr.URIs)
+}
+
+func TestParseEd448KeyCert(t *testing.T) {
+	// parse ed448 key
+	type pkcs8 struct {
+		Version    int
+		Algo       pkix.AlgorithmIdentifier
+		PrivateKey []byte
+		// optional attributes omitted.
+	}
+	ed448KeyPem := `-----BEGIN PRIVATE KEY-----
+MEcCAQAwBQYDK2VxBDsEOaHXGVLsBI2Q/Q8YevwBaQAxUKlqwTgCnjH1YQ2WSPX2
+jHlpnNnsSOB5fHSRPe1Xk/ckPfsIxrgWcA==
+-----END PRIVATE KEY-----`
+	block, _ := pem.Decode([]byte(ed448KeyPem))
+	ed448Key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		fmt.Println("parse key err:", err)
+		return
+	}
+	//fmt.Println("rsa.D:", hex.EncodeToString(rsaKey.D.Bytes()))
+	fmt.Println("rsa.D:", reflect.TypeOf(ed448Key))
+	fmt.Println()
+
+	// parse ca certificate
+	caCertPem := `-----BEGIN CERTIFICATE-----
+MIIBgjCCAQKgAwIBAgIUcMLP3MPlBP98+zu36Rs2Y9Wri6swBQYDK2VxMBAxDjAM
+BgNVBAMMBW93bmNhMCAXDTE5MDUwODA2MjYyN1oYDzIxNTYwMzMwMDYyNjI3WjAQ
+MQ4wDAYDVQQDDAVvd25jYTBDMAUGAytlcQM6AHff6RzuFH/lxCxr+5nz7JqVRluF
+TEiobTW2sagMl1KVlUEMA0nX4Riq9aq2O9Q5F+kxnvGPO5t0gKNTMFEwHQYDVR0O
+BBYEFA6Eyip9SC4Etw0n9GDBYTyehfHcMB8GA1UdIwQYMBaAFA6Eyip9SC4Etw0n
+9GDBYTyehfHcMA8GA1UdEwEB/wQFMAMBAf8wBQYDK2VxA3MA4IvDzo0UBEknEeXt
+tzqY0EHoj5IW990YeLE70xwNa5iJRv2amKRMaXaZx5fky7Be2TyOOyLYxTaAXABE
+bgbQ0RmUptznxJ5EJJ1ozCUAnvafIg61Vx4r6LheZod8zZR2hdrvk4DNhx+lFTFP
+mKQeZAwA
+-----END CERTIFICATE-----`
+	block, _ = pem.Decode([]byte(caCertPem))
+	caCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		fmt.Println("parse cert err:", err)
+		return
+	}
+	displayCert(caCert)
+	fmt.Println()
+
+	// parse client certificate request
+	serverCsrPem := `-----BEGIN CERTIFICATE REQUEST-----
+MIIBwjCCAUICAQAwFjEUMBIGA1UEAwwLa3ViZS1tYXN0ZXIwQzAFBgMrZXEDOgAF
+i9sLBao68H4bfLN6+v1Lyy7XYvouLGtqQ7TyEoLJtBRSNDdBaijwbcmk1lzniC5s
+b3Hh0NN1UYCggd8wgdwGCSqGSIb3DQEJDjGBzjCByzAJBgNVHRMEAjAAMAsGA1Ud
+DwQEAwIF4DCBsAYDVR0RBIGoMIGlggtrdWJlLW1hc3RlcoIKa3ViZXJuZXRlc4IS
+a3ViZXJuZXRlcy5kZWZhdWx0ghZrdWJlcm5ldGVzLmRlZmF1bHQuc3ZjgiRrdWJl
+cm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWyCLGt1YmVybmV0ZXMuZGVm
+YXVsdC5zdmMuY2x1c3Rlci5sb2NhbC1jbHVzdGVyhwQKE4qHhwQK/gABMAUGAytl
+cQNzAIbhMzBYMLdruRBG/vJY9eAXh3bSoebcW6XaUeDAk78XcaHmbwJ1tIBj/akk
+ov0gcx7rZ+uS2ohJAErVD0Pv0mzTSki+ja1has3dUhGjX1+Dx2EQvMuisN7ox/YL
+e5F6OevE/PywEH40qcC3M4mI7mI7AA==
+-----END CERTIFICATE REQUEST-----`
+	block, _ = pem.Decode([]byte(serverCsrPem))
+	serverCsr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil {
+		fmt.Println("parse cert requset err:", err)
+		return
+	}
+	displayCertReq(serverCsr)
+	fmt.Println()
+
+	// parse client certificate
+	serverCertPem := `-----BEGIN CERTIFICATE-----
+MIICBDCCAYSgAwIBAgIUd/wd1JVIb7c3rKCDo471c9narFEwBQYDK2VxMBAxDjAM
+BgNVBAMMBW93bmNhMCAXDTE5MDUwODA3MTczNloYDzIxNTYwMzMwMDcxNzM2WjAW
+MRQwEgYDVQQDDAtrdWJlLW1hc3RlcjBDMAUGAytlcQM6AAWL2wsFqjrwfht8s3r6
+/UvLLtdi+i4sa2pDtPISgsm0FFI0N0FqKPBtyaTWXOeILmxvceHQ03VRgKOBzjCB
+yzAJBgNVHRMEAjAAMAsGA1UdDwQEAwIF4DCBsAYDVR0RBIGoMIGlggtrdWJlLW1h
+c3RlcoIKa3ViZXJuZXRlc4ISa3ViZXJuZXRlcy5kZWZhdWx0ghZrdWJlcm5ldGVz
+LmRlZmF1bHQuc3ZjgiRrdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9j
+YWyCLGt1YmVybmV0ZXMuZGVmYXVsdC5zdmMuY2x1c3Rlci5sb2NhbC1jbHVzdGVy
+hwQKE4qHhwQK/gABMAUGAytlcQNzAI/UsOLy0t2sAMjIC9mvfSnXQA1rR6wFuxcs
+aEzN8fFTrPhkVmAcQ2b8MStIiQi8ZZL6OcI5s2eLgIL9whyVHfyqCJk9eSTKxdtm
+lMVWDfD4nf4NG7wjyrLqaSP7eGjZUrOHtBkskMCevnn1NrCCutEvAA==
+-----END CERTIFICATE-----`
+	block, _ = pem.Decode([]byte(serverCertPem))
+	serverCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		fmt.Println("parse cert err:", err)
+		return
+	}
+	displayCert(serverCert)
+	fmt.Println()
 }
