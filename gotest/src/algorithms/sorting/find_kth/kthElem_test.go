@@ -1,4 +1,4 @@
-package kthElem
+package find_kth
 
 import (
 	"fmt"
