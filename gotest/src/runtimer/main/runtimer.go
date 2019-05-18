@@ -33,7 +33,7 @@ func testRuntimeStackMem() {
 	n = runtime.Stack(stack, true)
 	fmt.Println("=== trace all:", string(stack[:n]))
 
-	<- ch
+	<-ch
 	// get current memory stats
 	stats := new(runtime.MemStats)
 	runtime.ReadMemStats(stats)
@@ -49,7 +49,7 @@ func testRuntime() {
 
 	// 将当前gouroutine绑定到它当前运行在的OS线程上，当前gouroutine会始终运行在此线程上，
 	// 其他的goroutine不会调度到此线程上，直到调用UnlockOSThread解绑。
-	// 如果解除绑定，线程会随着goroutine一起结束。
+	// 如果绑定解除之前goroutine退出了，线程会随着goroutine一起结束。
 	// 一般用途：调用OS服务；或调用其他语言的服务，需要用到per-thread state的
 	runtime.LockOSThread()
 	runtime.UnlockOSThread()
