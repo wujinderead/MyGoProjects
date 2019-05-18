@@ -37,7 +37,7 @@ func Listen() {
 	go func(c chan os.Signal) {
 		sig := <-c
 		fmt.Printf("Caught signal %s: shutting down.\n", sig)
-		err := listener.Close()  // if not close, the socket file can't be used again
+		err := listener.Close() // if not close, the socket file can't be used again
 		if err != nil {
 			fmt.Println("close listener err:", err)
 		} else {
@@ -51,7 +51,7 @@ func Listen() {
 		conn, err := listener.AcceptUnix()
 		if err != nil {
 			fmt.Println("accept error: ", err)
-			break  // if error, break
+			break // if error, break
 		}
 		// accept conn and use goroutine to process incoming conn
 		go echo(conn)

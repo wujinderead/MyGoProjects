@@ -21,12 +21,12 @@ func Send(name string, sleep int64) {
 		return
 	}
 
-
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
 
 	go reader(conn)
-	looper: for i:=0; i>=0; i++ {
+looper:
+	for i := 0; i >= 0; i++ {
 		// since there is no block in loop, we can we shutdown hook in main goroutine by
 		// 'select' to get interrupt signal and break the loop.
 		select {

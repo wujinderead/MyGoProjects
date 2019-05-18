@@ -1,11 +1,11 @@
 package ip
 
 import (
-	"testing"
 	"net"
+	"testing"
 )
 
 func TestIpConn(t *testing.T) {
 	ipconn := net.DialIP()
-	net.ListenIP("ip", )
+	net.ListenIP("ip")
 }
