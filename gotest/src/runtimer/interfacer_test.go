@@ -79,7 +79,7 @@ type _type struct {
 	size       uintptr
 	ptrdata    uintptr // size of memory prefix holding all pointers
 	hash       uint32
-	tflag      uint8
+	tflag      tflag
 	align      uint8
 	fieldalign uint8
 	kind       uint8
@@ -88,8 +88,8 @@ type _type struct {
 	// If the KindGCProg bit is set in kind, gcdata is a GC program.
 	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
 	gcdata    *byte
-	str       int32
-	ptrToThis int32
+	str       nameOff
+	ptrToThis typeOff
 }
 
 type typeAlg struct {
@@ -137,6 +137,11 @@ type imethod struct {
 	name int32
 	ityp int32
 }
+
+type nameOff int32 // offset to a name
+type typeOff int32 // offset to an *rtype
+type textOff int32 // offset from top of text section
+type tflag uint8
 
 func TestIfaceEface(t *testing.T) {
 	v1 := bird{8, 123, "aaa"}
