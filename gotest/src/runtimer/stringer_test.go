@@ -114,3 +114,87 @@ func TestStringFromStringHeader(t *testing.T) {
 	// *strp is also a new string header
 	fmt.Println("new string:", *strp) // 赶客缦胡
 }
+
+func TestStringAdd(t *testing.T) {
+	str := "abcde"
+	fmt.Println("len:", len(str), ", bytes:", []byte(str))
+	ps := (*stringStruct)(unsafe.Pointer(&str))
+	fmt.Println("header len:", ps.len)
+	fmt.Println("str addr:", strconv.FormatUint(uint64(uintptr(ps.str)), 16))
+
+	// same as str, as it can be determined during compiling
+	str1 := "abc" + "de"
+	fmt.Println("len:", len(str1), ", bytes:", []byte(str1))
+	ps = (*stringStruct)(unsafe.Pointer(&str1))
+	fmt.Println("header len:", ps.len)
+	fmt.Println("str addr:", strconv.FormatUint(uint64(uintptr(ps.str)), 16))  // same as str
+
+	// can not determined during compiling, it is allocated on heap during runtime
+	str2 := "abc" + string([]byte{100, 101})
+	fmt.Println("len:", len(str2), ", bytes:", []byte(str2))
+	ps = (*stringStruct)(unsafe.Pointer(&str2))
+	fmt.Println("header len:", ps.len)
+	fmt.Println("str addr:", strconv.FormatUint(uint64(uintptr(ps.str)), 16))  // different from str
+	fmt.Println("str==str2:", str==str2)  // equal
+}
+
+func TestStringTruncate(t *testing.T) {
+	str := "赵客缦胡缨吴钩霜雪明"
+	fmt.Println("len:", len(str))       // 30, length of utf8 bytes
+	fmt.Println("bytes:", []byte(str))
+	fmt.Println("runes:", []rune(str))
+	ps := (*stringStruct)(unsafe.Pointer(&str))
+	fmt.Println("header len:", ps.len)         // 30
+	fmt.Println("str addr:", uintptr(ps.str))  // 5623127
+	fmt.Println()
+
+	// truncation are based on byte, not rune
+	// fmt.Println(&str[0])   // cannot take address of str[0], to prevent write
+	fmt.Println("str[0]:", str[0])      // 232, first bytes
+	fmt.Println("str[0:4]:", str[0:6])  // 赵客, first 6 bytes
+
+	// truncated string use the same underlying bytes as the original string, only length changed
+	truc := str[0:6]
+	ps = (*stringStruct)(unsafe.Pointer(&truc))
+	fmt.Println("header len:", ps.len)         // 6
+	fmt.Println("str addr:", uintptr(ps.str))  // 5623127
+	fmt.Println()
+
+	truc = str[6:12]
+	ps = (*stringStruct)(unsafe.Pointer(&truc))
+	fmt.Println("header len:", ps.len)         // 6
+	fmt.Println("str addr:", uintptr(ps.str))  // 5623133
+	fmt.Println()
+
+	// string allocated on heap during runtime
+	str2 := string([]byte("赵客缦胡缨吴钩霜雪明"))
+	fmt.Println("len:", len(str2), ", bytes:", []byte(str2))
+	ps = (*stringStruct)(unsafe.Pointer(&str2))
+	fmt.Println("header len:", ps.len)          // 30
+	fmt.Println("str2 addr:", uintptr(ps.str))  // 824633763136
+	fmt.Println()
+
+	// truncated string mechanism same as constant pool string
+	trunc1 := str2[0:6]
+	ps = (*stringStruct)(unsafe.Pointer(&trunc1))
+	fmt.Println("header len:", ps.len)          // 30
+	fmt.Println("str addr:", uintptr(ps.str))   // 824633763136
+	fmt.Println()
+
+	trunc2 := str2[6:12]
+	ps = (*stringStruct)(unsafe.Pointer(&trunc2))
+	fmt.Println("header len:", ps.len)          // 30
+	fmt.Println("str addr:", uintptr(ps.str))   // 824633763142
+	fmt.Println()
+
+	// only that string allocated on heap can be modified
+	ps = (*stringStruct)(unsafe.Pointer(&str2))
+	b := (*byte)(unsafe.Pointer(uintptr(ps.str)+uintptr(2)))   // modify str2[2]
+	*b += 1
+	ps = (*stringStruct)(unsafe.Pointer(&str2))
+	b = (*byte)(unsafe.Pointer(uintptr(ps.str)+uintptr(8)))    // modify str2[8]
+	*b += 1
+	fmt.Println("str2:", str2)       // 赶客缧胡缨吴钩霜雪明
+	fmt.Println("trunc1:", trunc1)   // 赶客
+	fmt.Println("trunc2:", trunc2)   // 缧胡
+}
