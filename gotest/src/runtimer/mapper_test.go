@@ -10,19 +10,15 @@ import (
 )
 
 const (
-	// Maximum number of key/value pairs a bucket can hold.
+	// 8 key/value pairs a bucket can hold.
 	bucketCntBits = 3
 	bucketCnt     = 1 << bucketCntBits
 
-	// Maximum average load of a bucket that triggers growth is 6.5.
-	// Represent as loadFactorNum/loadFactDen, to allow integer math.
+	// load factor 6.5
 	loadFactorNum = 13
 	loadFactorDen = 2
 
-	// Maximum key or value size to keep inline (instead of mallocing per element).
-	// Must fit in a uint8.
-	// Fast versions cannot handle big values - the cutoff size for
-	// fast versions in ../../cmd/internal/gc/walk.go must be at most this value.
+	// Maximum key or value size (in bytes) to keep inline (instead of mallocing per element).
 	maxKeySize   = 128
 	maxValueSize = 128
 
@@ -112,6 +108,166 @@ type bmap struct {
 	// Followed by an overflow pointer.
 }
 
+type maptype struct {
+	typ        _type
+	key        *_type
+	elem       *_type
+	bucket     *_type // internal type representing a hash bucket
+	keysize    uint8  // size of key slot
+	valuesize  uint8  // size of value slot
+	bucketsize uint16 // size of bucket
+	flags      uint32
+}
+
+func (mt *maptype) indirectkey() bool { // store ptr to key instead of key itself
+	return mt.flags&1 != 0
+}
+func (mt *maptype) indirectvalue() bool { // store ptr to value instead of value itself
+	return mt.flags&2 != 0
+}
+
+func getKeyHashFunc(mapper interface{}) func(unsafe.Pointer, uintptr) uintptr {
+	efacer := (*eface)(unsafe.Pointer(&mapper))
+	mt := (*maptype)(unsafe.Pointer(efacer._type)) // *_type to *maptype
+	return mt.key.alg.hash
+}
+
+func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(p) + x)
+}
+
+func getKeyValueBucketSize(mapper interface{}) (uintptr, uintptr, uintptr) {
+	efacer := (*eface)(unsafe.Pointer(&mapper))
+	typ := efacer._type
+	mt := (*maptype)(unsafe.Pointer(typ)) // *_type to *maptype
+	return mt.key.size, mt.elem.size, mt.bucket.size
+}
+
+func TestMapType(t *testing.T) {
+	mapper := make(map[int64]string)
+	var mapEface interface{} = mapper
+	efacer := (*eface)(unsafe.Pointer(&mapEface))
+	typ := efacer._type
+
+	mt := (*maptype)(unsafe.Pointer(typ)) // *_type to *maptype
+	fmt.Println("typ size      :", mt.typ.size)
+	fmt.Println("typ kind      :", mt.typ.kind, reflect.Kind(mt.typ.kind))
+	fmt.Println("typ ptrToThis :", mt.typ.ptrToThis)
+	fmt.Println("indirectkey:", mt.indirectkey())
+	fmt.Println("indirectvalue:", mt.indirectvalue())
+	fmt.Println()
+
+	// map[int64]string information
+	fmt.Println("key size:", mt.keysize)
+	fmt.Println("value size:", mt.valuesize)
+	fmt.Println("bucket size:", mt.bucketsize)
+	fmt.Println("flag:", mt.flags)
+	fmt.Println()
+
+	// int64 type
+	fmt.Println("key type size      :", mt.key.size)                            // 8 bytes
+	fmt.Println("key type kind      :", mt.key.kind, reflect.Kind(mt.key.kind)) // kind134
+	fmt.Println("key type ptrToThis :", mt.key.ptrToThis)                       // *int64 type
+	fmt.Println()
+
+	// string type
+	fmt.Println("value type size      :", mt.elem.size)                             // 16 bytes
+	fmt.Println("value type kind      :", mt.elem.kind, reflect.Kind(mt.elem.kind)) // string
+	fmt.Println("value type ptrToThis :", mt.elem.ptrToThis)                        // *string
+	fmt.Println()
+
+	// bucket type
+	// 208 bytes: [8]uint8 tophash (8bytes), 8 int64 keys (8×8bytes),
+	// 8 string values (8×16bytes), *overflow (8bytes) = 8 + 64 + 128 + 8 =208 bytes
+	fmt.Println("bucket type size      :", mt.bucket.size)
+	fmt.Println("bucket type kind      :", mt.bucket.kind, reflect.Kind(mt.bucket.kind)) // struct
+	fmt.Println("bucket type ptrToThis :", mt.bucket.ptrToThis)                          // *bucket
+	fmt.Println()
+}
+
+func displayMapType(mapper interface{}) {
+	fmt.Println("reflect type str:", reflect.TypeOf(mapper).String())
+	efacer := (*eface)(unsafe.Pointer(&mapper))
+	typ := efacer._type
+	/*
+	// we can cast a *_type tp *maptype, which indicates:
+	// for a map type in golang, not only common '_type' information is recorded in memory,
+	// but also the key, value and buckets information.
+	type maptype struct {
+	   	typ        _type
+	   	key        *_type
+	   	elem       *_type
+	   	bucket     *_type // internal type representing a hash bucket
+	   	keysize    uint8  // size of key slot
+	   	valuesize  uint8  // size of value slot
+	   	bucketsize uint16 // size of bucket
+	   	flags      uint32
+	}
+	*/
+	mt := (*maptype)(unsafe.Pointer(typ))
+	fmt.Println("key type size:", mt.key.size)
+	fmt.Println("value type size:", mt.elem.size)
+	fmt.Println("bucket type size:", mt.bucket.size)
+	fmt.Println("indirectkey:", mt.indirectkey())
+	fmt.Println("indirectvalue:", mt.indirectvalue())
+}
+
+// load factor is 6.5, which means when hmap.count > 6.5×(1<<hmap.B), need to expand the map
+// e.g., h.B=2, there are 4 buckets, when count > 6.5×4=26, double the buckets to 8
+//       h.B=3, there are 8 buckets, when count > 6.5×8=52, double the buckets to 16
+// expand buckets need to split oldBucket[i] to newBucket[i] and newBucket[i+oldsize].
+// however split the buckets are not all done when expanded, but doing gradually when next add or delete.
+// when expand, make a new array, and make the original bucket array as oldBuckets.
+// when nex add or delete happens, we pick one or two buckets in the oldBuckets, and split it into new buckets.
+// then finish splitting buckets, it is marked as 'evacuated'. the oldBuckets and new buckets are together
+// responsible for read. when oldBuckets got empty, set it to zero.
+func TestHashMapExpand(t *testing.T) {
+	mapper := make(map[string]string)
+	displayMapType(mapper)
+	fmt.Println()
+
+	hp := *(**hmap)(unsafe.Pointer(&mapper))
+	num := 60
+	for i := 1; i <= num; i++ {
+		key := getRandomStr(7, 5)
+		value := getRandomStr(3, 1)
+		mapper[key] = value
+		if (i>=26 && i<=34) || (i>=52 && i<=60) {
+			numBucket := uintptr(1 << hp.B)
+			_, _, bucketsize := getKeyValueBucketSize(mapper)
+			fmt.Println("hp.B", hp.B)
+			fmt.Println("hp.noverflow", hp.noverflow, ", hp.count:", hp.count)
+			fmt.Println("hp.oldbuckets", uintptr(hp.oldbuckets))
+			for i := uintptr(0); i < numBucket; i++ {
+				fmt.Println("bucket:", i)
+				b := (*bmap)(add(hp.buckets, i*bucketsize))
+				for b != nil {
+					tophash := *(*[bucketCnt]uint8)(unsafe.Pointer(b))
+					fmt.Println("tophash:", tophash)
+					b = *(**bmap)(add(unsafe.Pointer(b), bucketsize-bucketCnt)) // get next bucket
+				}
+			}
+			fmt.Println()
+		}
+	}
+}
+
+func TestIndirectKeyValueSize(t *testing.T) {
+	// the results indicate: the max direct kv size is 128 bytes,
+	// when key or value size is larger than 128 bytes, use pointer instead
+	mapper1 := make(map[[128]byte][128]byte)
+	mapper2 := make(map[[129]byte][128]byte)
+	mapper3 := make(map[[128]byte][129]byte)
+	mapper4 := make(map[[129]byte][129]byte)
+	displayMapType(mapper1)    // direct key, value
+	fmt.Println()
+	displayMapType(mapper2)    // indirect key, direct value
+	fmt.Println()
+	displayMapType(mapper3)    // direct key, indirect value
+	fmt.Println()
+	displayMapType(mapper4)    // indirect key, indirect value
+}
+
 func TestHashMapInt64String(t *testing.T) {
 	mapper := make(map[int64]string)
 	num := 50
@@ -175,6 +331,43 @@ func TestHashMapInt64String(t *testing.T) {
 	}
 }
 
+// deleting a key would set the corresponding tophash to 1, indicates that this position is deleted and empty.
+// when new key is add to this bucket, this position can hold the new kv pair.
+func TestHashMapDelete(t *testing.T) {
+	mapper := make(map[int64]string)
+	displayMapType(mapper)
+	fmt.Println()
+
+	num := 50
+	maxnum := 400
+	keys := make([]int64, 0)
+	for i := 0; i < num; i++ {
+		k := rander.Int63n(int64(maxnum)) + 1
+		keys = append(keys, k)
+		v := getRandomStr(7, 3)
+		mapper[k] = v
+	}
+
+	printBuckets(mapper)
+	deleteNum := 10
+	keysToDelete := make([]int64, 0, 10)
+	for k:=0; k<deleteNum; k++ {
+		ki := rander.Int63n(int64(len(keys)))
+		if value, ok := mapper[keys[ki]]; ok {
+			fmt.Println("======key to delete:", keys[ki], "=", value)
+			keysToDelete = append(keysToDelete, keys[ki])
+			delete(mapper, keys[ki])
+			printBuckets(mapper)
+		}
+	}
+	for _, key := range keysToDelete {
+		value := getRandomStr(7, 3)
+		fmt.Println("======put:", key, value)
+		mapper[key] = value
+		printBuckets(mapper)
+	}
+}
+
 func getRandomStr(max, min int) string {
 	length := int(rander.Int31n(int32(max-min))) + min
 	runes := make([]rune, length)
@@ -184,109 +377,41 @@ func getRandomStr(max, min int) string {
 	return string(runes)
 }
 
-type maptype struct {
-	typ        _type
-	key        *_type
-	elem       *_type
-	bucket     *_type // internal type representing a hash bucket
-	keysize    uint8  // size of key slot
-	valuesize  uint8  // size of value slot
-	bucketsize uint16 // size of bucket
-	flags      uint32
-}
-
-func (mt *maptype) indirectkey() bool { // store ptr to key instead of key itself
-	return mt.flags&1 != 0
-}
-func (mt *maptype) indirectvalue() bool { // store ptr to value instead of value itself
-	return mt.flags&2 != 0
-}
-
-func getKeyHashFunc(mapper interface{}) func(unsafe.Pointer, uintptr) uintptr {
-	efacer := (*eface)(unsafe.Pointer(&mapper))
-	mt := (*maptype)(unsafe.Pointer(efacer._type)) // *_type to *maptype
-	return mt.key.alg.hash
-}
-
-func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
-	return unsafe.Pointer(uintptr(p) + x)
-}
-
-func getKeyValueBucketSize(mapper interface{}) (uintptr, uintptr, uintptr) {
-	efacer := (*eface)(unsafe.Pointer(&mapper))
-	typ := efacer._type
-	mt := (*maptype)(unsafe.Pointer(typ)) // *_type to *maptype
-	return mt.key.size, mt.elem.size, mt.bucket.size
-}
-
-func TestMapType(t *testing.T) {
-	mapper := make(map[int64]string)
-	var mapEface interface{} = mapper
-	efacer := (*eface)(unsafe.Pointer(&mapEface))
-	typ := efacer._type
-
-	mt := (*maptype)(unsafe.Pointer(typ)) // *_type to *maptype
-	fmt.Println("typ size      :", mt.typ.size)
-	fmt.Println("typ kind      :", mt.typ.kind, reflect.Kind(mt.typ.kind))
-	fmt.Println("typ ptrToThis :", mt.typ.ptrToThis)
-	fmt.Println("indirectkey:", mt.indirectkey())
-	fmt.Println("indirectvalue:", mt.indirectvalue())
+func printBuckets(mapper map[int64]string) {
+	hp := *(**hmap)(unsafe.Pointer(&mapper)) // use **hmap to get *hmap
+	numBucket := uintptr(1 << hp.B)
+	mask := numBucket - 1
+	keysize, valuesize, bucketsize := getKeyValueBucketSize(mapper)
+	hasher := getKeyHashFunc(mapper)
+	fmt.Println("hp.B:", hp.B)
+	for i := uintptr(0); i < numBucket; i++ {
+		b := (*bmap)(add(hp.buckets, i*bucketsize))
+		if *(*int64)(unsafe.Pointer(b)) == 0 {
+			continue   // tophash are all empty, skip
+		}
+		fmt.Println("bucket:", i)
+		for b != nil {
+			tophash := *(*[bucketCnt]uint8)(unsafe.Pointer(b))
+			fmt.Println("tophash:", tophash)
+			for j := uintptr(0); j < bucketCnt; j++ {
+				if tophash[j] == 0 {  // tophash[j]==0, means rest positions are empty, break
+					break
+				}
+				if tophash[j] == 1 {  // tophash[j]==0, means this position are deleted, can be re-filled
+					fmt.Print("[deleted], ")
+					continue
+				}
+				curkeyp := (*int64)(add(unsafe.Pointer(b), bucketCnt+j*keysize))
+				curvaluep := add(unsafe.Pointer(b), bucketCnt+bucketCnt*keysize+j*valuesize)
+				khash := hasher(unsafe.Pointer(curkeyp), uintptr(hp.hash0))
+				curtophash := khash >> (64 - bucketCnt)
+				curindex := khash & mask
+				fmt.Print("[", curtophash, "|", curindex, "|", *curkeyp, "=", *(*string)(curvaluep), "], ")
+			}
+			fmt.Println()
+			b = *(**bmap)(add(unsafe.Pointer(b), bucketsize-bucketCnt)) // get next bucket
+		}
+	}
+	// todo print old bucket
 	fmt.Println()
-
-	// map[int64]string information
-	fmt.Println("*key type:", uintptr(unsafe.Pointer(mt.key)))        // *rtype, map key type
-	fmt.Println("*value type:", uintptr(unsafe.Pointer(mt.elem)))     // *rtype, map element type
-	fmt.Println("*bucket typed:", uintptr(unsafe.Pointer(mt.bucket))) // *rtype, bucket structure
-	fmt.Println("key size:", mt.keysize)
-	fmt.Println("value size:", mt.valuesize)
-	fmt.Println("bucket size:", mt.bucketsize)
-	fmt.Println("flag:", mt.flags)
-	fmt.Println()
-
-	// int64 type
-	fmt.Println("key type size      :", mt.key.size)                            // 8 bytes
-	fmt.Println("key type kind      :", mt.key.kind, reflect.Kind(mt.key.kind)) // kind134
-	fmt.Println("key type ptrToThis :", mt.key.ptrToThis)                       // *int64 type
-	fmt.Println()
-
-	// string type
-	fmt.Println("value type size      :", mt.elem.size)                             // 16 bytes
-	fmt.Println("value type kind      :", mt.elem.kind, reflect.Kind(mt.elem.kind)) // string
-	fmt.Println("value type ptrToThis :", mt.elem.ptrToThis)                        // *string
-	fmt.Println()
-
-	// bucket type
-	// 208 bytes: [8]uint8 tophash (8bytes), 8 int64 keys (8×8bytes),
-	// 8 string values (8×16bytes), *overflow (8bytes) = 8 + 64 + 128 + 8 =208 bytes
-	fmt.Println("bucket type size      :", mt.bucket.size)
-	fmt.Println("bucket type kind      :", mt.bucket.kind, reflect.Kind(mt.bucket.kind)) // struct
-	fmt.Println("bucket type ptrToThis :", mt.bucket.ptrToThis)                          // *bucket
-	fmt.Println()
-}
-
-func displayMapType(mapper interface{}) {
-	fmt.Println("reflect type str:", reflect.TypeOf(mapper).String())
-	efacer := (*eface)(unsafe.Pointer(&mapper))
-	typ := efacer._type
-	/*
-	   // we can cast a *_type tp *maptype, which indicates:
-	   // for a map type in golang, not only common '_type' information is recorded in memory,
-	   // but also the key, value and buckets information.
-	   type maptype struct {
-	   	typ        _type
-	   	key        *_type
-	   	elem       *_type
-	   	bucket     *_type // internal type representing a hash bucket
-	   	keysize    uint8  // size of key slot
-	   	valuesize  uint8  // size of value slot
-	   	bucketsize uint16 // size of bucket
-	   	flags      uint32
-	   }
-	*/
-	mt := (*maptype)(unsafe.Pointer(typ))
-	fmt.Println("key type size:", mt.key.size)
-	fmt.Println("value type size:", mt.elem.size)
-	fmt.Println("bucket type size:", mt.bucket.size)
-	fmt.Println("indirectkey:", mt.indirectkey())
-	fmt.Println("indirectvalue:", mt.indirectvalue())
 }
