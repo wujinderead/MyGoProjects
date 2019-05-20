@@ -34,11 +34,12 @@ const (
 	// Each bucket (including its overflow buckets, if any) will have either all or none of its
 	// entries in the evacuated* states (except during the evacuate() method, which only happens
 	// during map writes and thus no one else can observe the map during that time).
-	empty          = 0 // cell is empty
-	evacuatedEmpty = 1 // cell is empty, bucket is evacuated.
+	emptyRest      = 0 // this cell is empty, and there are no more non-empty cells at higher indexes or overflows.
+	emptyOne       = 1 // this cell is empty
 	evacuatedX     = 2 // key/value is valid.  Entry has been evacuated to first half of larger table.
 	evacuatedY     = 3 // same as above, but evacuated to second half of larger table.
-	minTopHash     = 4 // minimum tophash for a normal filled cell.
+	evacuatedEmpty = 4 // cell is empty, bucket is evacuated.
+	minTopHash     = 5 // minimum tophash for a normal filled cell.
 
 	// flags
 	iterator     = 1 // there may be an iterator using buckets
@@ -222,32 +223,27 @@ func displayMapType(mapper interface{}) {
 // then finish splitting buckets, it is marked as 'evacuated'. the oldBuckets and new buckets are together
 // responsible for read. when oldBuckets got empty, set it to zero.
 func TestHashMapExpand(t *testing.T) {
-	mapper := make(map[string]string)
+	mapper := make(map[int64]string)
 	displayMapType(mapper)
 	fmt.Println()
-
-	hp := *(**hmap)(unsafe.Pointer(&mapper))
 	num := 60
+	maxnum := 1000
+	keys := make([]int64, 0)
 	for i := 1; i <= num; i++ {
-		key := getRandomStr(7, 5)
-		value := getRandomStr(3, 1)
+		key := rander.Int63n(int64(maxnum)) + 1
+		keys = append(keys, key)
+		value := getRandomStr(5, 3)
 		mapper[key] = value
-		if (i>=26 && i<=34) || (i>=52 && i<=60) {
-			numBucket := uintptr(1 << hp.B)
-			_, _, bucketsize := getKeyValueBucketSize(mapper)
-			fmt.Println("hp.B", hp.B)
-			fmt.Println("hp.noverflow", hp.noverflow, ", hp.count:", hp.count)
-			fmt.Println("hp.oldbuckets", uintptr(hp.oldbuckets))
-			for i := uintptr(0); i < numBucket; i++ {
-				fmt.Println("bucket:", i)
-				b := (*bmap)(add(hp.buckets, i*bucketsize))
-				for b != nil {
-					tophash := *(*[bucketCnt]uint8)(unsafe.Pointer(b))
-					fmt.Println("tophash:", tophash)
-					b = *(**bmap)(add(unsafe.Pointer(b), bucketsize-bucketCnt)) // get next bucket
-				}
+		if (i>=26 && i<=30) || (i>=52 && i<=58) {
+			printBuckets(mapper)
+		}
+		if i==54 || i==55 {
+			ki := rander.Int63n(int64(len(keys)))
+			if value, ok := mapper[keys[ki]]; ok {
+				fmt.Println("======key to delete:", keys[ki], "=", value)
+				delete(mapper, keys[ki])
+				printBuckets(mapper)
 			}
-			fmt.Println()
 		}
 	}
 }
@@ -266,69 +262,6 @@ func TestIndirectKeyValueSize(t *testing.T) {
 	displayMapType(mapper3)    // direct key, indirect value
 	fmt.Println()
 	displayMapType(mapper4)    // indirect key, indirect value
-}
-
-func TestHashMapInt64String(t *testing.T) {
-	mapper := make(map[int64]string)
-	num := 50
-	maxnum := 200
-	keys := make([]int64, 0)
-	for i := 0; i < num; i++ {
-		k := rander.Int63n(int64(maxnum)) + 1
-		keys = append(keys, k)
-		v := getRandomStr(7, 3)
-		mapper[k] = v
-	}
-	mapper[0] = ""
-	mapper[-1] = "ελλάδα μακεδονία θράκη"
-	fmt.Println("map:", mapper)
-	fmt.Println("len(map):", len(mapper))
-	fmt.Println()
-
-	displayMapType(mapper)
-	fmt.Println()
-
-	// unsafe.Sizeof(map) is 8, indicates that 'map[k]v' is actually *hmap
-	hp := *(**hmap)(unsafe.Pointer(&mapper)) // use **hmap to get *hmap
-	fmt.Println("count:", hp.count)
-	fmt.Println("flag:", hp.flags)
-	fmt.Println("B:", hp.B)
-	fmt.Println("noverflow:", hp.noverflow)
-	fmt.Println("hash0:", hp.hash0)
-	fmt.Println("bucket pointer:", uintptr(hp.buckets))
-	fmt.Println("old bucket:", uintptr(hp.oldbuckets))
-	fmt.Println("nevacuate:", hp.nevacuate)
-	fmt.Println("extra:", uintptr(unsafe.Pointer(hp.extra)))
-	fmt.Println()
-
-	numBucket := uintptr(1 << hp.B)
-	mask := numBucket - 1
-	keysize, valuesize, bucketsize := getKeyValueBucketSize(mapper)
-
-	// get key hash func
-	hasher := getKeyHashFunc(mapper)
-	for i := uintptr(0); i < numBucket; i++ {
-		fmt.Println("bucket:", i)
-		b := (*bmap)(add(hp.buckets, i*bucketsize))
-		for b != nil {
-			tophash := *(*[bucketCnt]uint8)(unsafe.Pointer(b))
-			fmt.Println("tophash:", tophash)
-			for j := uintptr(0); j < bucketCnt; j++ {
-				if tophash[j] == 0 { // for key=0, hash!=0, so check tophash
-					break
-				}
-				curkeyp := (*int64)(add(unsafe.Pointer(b), bucketCnt+j*keysize))
-				curvaluep := add(unsafe.Pointer(b), bucketCnt+bucketCnt*keysize+j*valuesize)
-				khash := hasher(unsafe.Pointer(curkeyp), uintptr(hp.hash0))
-				curtophash := khash >> (64 - bucketCnt)
-				curindex := khash & mask
-				fmt.Print("[", curtophash, "|", curindex, "|", *curkeyp, "=", *(*string)(curvaluep), "], ")
-			}
-			fmt.Println()
-			b = *(**bmap)(add(unsafe.Pointer(b), bucketsize-bucketCnt)) // get next bucket
-		}
-		fmt.Println()
-	}
 }
 
 // deleting a key would set the corresponding tophash to 1, indicates that this position is deleted and empty.
@@ -383,7 +316,8 @@ func printBuckets(mapper map[int64]string) {
 	mask := numBucket - 1
 	keysize, valuesize, bucketsize := getKeyValueBucketSize(mapper)
 	hasher := getKeyHashFunc(mapper)
-	fmt.Println("hp.B:", hp.B)
+	fmt.Printf("====== B: %d, count: %d, noverflow: %d, nevacuate: %d\n",
+		hp.B, hp.count, hp.noverflow, hp.nevacuate)
 	for i := uintptr(0); i < numBucket; i++ {
 		b := (*bmap)(add(hp.buckets, i*bucketsize))
 		if *(*int64)(unsafe.Pointer(b)) == 0 {
@@ -394,10 +328,10 @@ func printBuckets(mapper map[int64]string) {
 			tophash := *(*[bucketCnt]uint8)(unsafe.Pointer(b))
 			fmt.Println("tophash:", tophash)
 			for j := uintptr(0); j < bucketCnt; j++ {
-				if tophash[j] == 0 {  // tophash[j]==0, means rest positions are empty, break
+				if tophash[j] == emptyRest {  // tophash[j]==0, rest positions are empty, break
 					break
 				}
-				if tophash[j] == 1 {  // tophash[j]==0, means this position are deleted, can be re-filled
+				if tophash[j] == emptyOne {   // tophash[j]==1, this position are deleted, can be re-filled
 					fmt.Print("[deleted], ")
 					continue
 				}
@@ -412,6 +346,50 @@ func printBuckets(mapper map[int64]string) {
 			b = *(**bmap)(add(unsafe.Pointer(b), bucketsize-bucketCnt)) // get next bucket
 		}
 	}
-	// todo print old bucket
+	fmt.Println()
+	if uintptr(hp.oldbuckets)>0 {
+		numBucket = numBucket/2
+		mask = numBucket - 1
+		for i := uintptr(0); i < numBucket; i++ {
+			b := (*bmap)(add(hp.oldbuckets, i*bucketsize))
+			if *(*int64)(unsafe.Pointer(b)) == 0 {
+				continue   // tophash are all empty, skip
+			}
+			fmt.Println("old bucket:", i)
+			for b != nil {
+				tophash := *(*[bucketCnt]uint8)(unsafe.Pointer(b))
+				fmt.Println("tophash:", tophash)
+				for j := uintptr(0); j < bucketCnt; j++ {
+					if tophash[j] == emptyRest {   // tophash[j]==0, rest positions are empty, break
+						break
+					}
+					if tophash[j] == emptyOne {    // tophash[j]==1, this position are deleted, can be re-filled
+						fmt.Print("[deleted], ")
+						continue
+					}
+					if tophash[j] == evacuatedX {  // tophash[j]==2, evacuated to lower half of new buckets
+						fmt.Print("[lower], ")
+						continue
+					}
+					if tophash[j] == evacuatedY {  // tophash[j]==3, evacuated to higher half of new buckets
+						fmt.Print("[higher], ")
+						continue
+					}
+					if tophash[j] == evacuatedEmpty {  // tophash[j]==4, evacuation finished
+						fmt.Print("[evacuated], ")
+						continue
+					}
+					curkeyp := (*int64)(add(unsafe.Pointer(b), bucketCnt+j*keysize))
+					curvaluep := add(unsafe.Pointer(b), bucketCnt+bucketCnt*keysize+j*valuesize)
+					khash := hasher(unsafe.Pointer(curkeyp), uintptr(hp.hash0))
+					curtophash := khash >> (64 - bucketCnt)
+					curindex := khash & mask
+					fmt.Print("[", curtophash, "|", curindex, "|", *curkeyp, "=", *(*string)(curvaluep), "], ")
+				}
+				fmt.Println()
+				b = *(**bmap)(add(unsafe.Pointer(b), bucketsize-bucketCnt)) // get next bucket
+			}
+		}
+	}
 	fmt.Println()
 }
