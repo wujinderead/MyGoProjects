@@ -7,12 +7,6 @@ import (
 	"unsafe"
 )
 
-// stringStruct in runtime/string.go
-type stringStruct struct {
-	str unsafe.Pointer
-	len int
-}
-
 func TestStringStruct(t *testing.T) {
 	str := "abcde"
 	fmt.Println("ascii len:", len(str), ", bytes:", []byte(str))

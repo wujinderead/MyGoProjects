@@ -109,32 +109,10 @@ type bmap struct {
 	// Followed by an overflow pointer.
 }
 
-type maptype struct {
-	typ        _type
-	key        *_type
-	elem       *_type
-	bucket     *_type // internal type representing a hash bucket
-	keysize    uint8  // size of key slot
-	valuesize  uint8  // size of value slot
-	bucketsize uint16 // size of bucket
-	flags      uint32
-}
-
-func (mt *maptype) indirectkey() bool { // store ptr to key instead of key itself
-	return mt.flags&1 != 0
-}
-func (mt *maptype) indirectvalue() bool { // store ptr to value instead of value itself
-	return mt.flags&2 != 0
-}
-
 func getKeyHashFunc(mapper interface{}) func(unsafe.Pointer, uintptr) uintptr {
 	efacer := (*eface)(unsafe.Pointer(&mapper))
 	mt := (*maptype)(unsafe.Pointer(efacer._type)) // *_type to *maptype
 	return mt.key.alg.hash
-}
-
-func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
-	return unsafe.Pointer(uintptr(p) + x)
 }
 
 func getKeyValueBucketSize(mapper interface{}) (uintptr, uintptr, uintptr) {
