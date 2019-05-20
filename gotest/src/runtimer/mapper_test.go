@@ -3,10 +3,10 @@ package runtimer
 import (
 	"fmt"
 	"math/rand"
+	"reflect"
 	"testing"
 	"time"
 	"unsafe"
-	"reflect"
 )
 
 const (
@@ -112,17 +112,19 @@ type bmap struct {
 	// Followed by an overflow pointer.
 }
 
-func TestHashMap(t *testing.T) {
+func TestHashMapInt64String(t *testing.T) {
 	mapper := make(map[int64]string)
 	num := 50
 	maxnum := 200
 	keys := make([]int64, 0)
 	for i := 0; i < num; i++ {
-		k := rander.Int63n(int64(maxnum))
+		k := rander.Int63n(int64(maxnum)) + 1
 		keys = append(keys, k)
 		v := getRandomStr(7, 3)
 		mapper[k] = v
 	}
+	mapper[0] = ""
+	mapper[-1] = "ελλάδα μακεδονία θράκη"
 	fmt.Println("map:", mapper)
 	fmt.Println("len(map):", len(mapper))
 	fmt.Println()
@@ -131,7 +133,7 @@ func TestHashMap(t *testing.T) {
 	fmt.Println()
 
 	// unsafe.Sizeof(map) is 8, indicates that 'map[k]v' is actually *hmap
-	hp := *(**hmap)(unsafe.Pointer(&mapper))  // use **hmap to get *hmap
+	hp := *(**hmap)(unsafe.Pointer(&mapper)) // use **hmap to get *hmap
 	fmt.Println("count:", hp.count)
 	fmt.Println("flag:", hp.flags)
 	fmt.Println("B:", hp.B)
@@ -144,18 +146,30 @@ func TestHashMap(t *testing.T) {
 	fmt.Println()
 
 	numBucket := uintptr(1 << hp.B)
-	//mask := numBucket - 1
-	_, _, bucketsize := getKeyValueBucketSize(mapper)
+	mask := numBucket - 1
+	keysize, valuesize, bucketsize := getKeyValueBucketSize(mapper)
 
 	// get key hash func
-	//hasher := getKeyHashFunc(mapper)
-	// todo show bucket
-	for i:=uintptr(0); i<numBucket; i++ {
+	hasher := getKeyHashFunc(mapper)
+	for i := uintptr(0); i < numBucket; i++ {
 		fmt.Println("bucket:", i)
 		b := (*bmap)(add(hp.buckets, i*bucketsize))
-		for j:=uintptr(0); j<bucketsize/8; j++ {
-			ip := (*int64)(add(unsafe.Pointer(b), j*8))
-			fmt.Print(*ip, ", ")
+		for b != nil {
+			tophash := *(*[bucketCnt]uint8)(unsafe.Pointer(b))
+			fmt.Println("tophash:", tophash)
+			for j := uintptr(0); j < bucketCnt; j++ {
+				if tophash[j] == 0 { // for key=0, hash!=0, so check tophash
+					break
+				}
+				curkeyp := (*int64)(add(unsafe.Pointer(b), bucketCnt+j*keysize))
+				curvaluep := add(unsafe.Pointer(b), bucketCnt+bucketCnt*keysize+j*valuesize)
+				khash := hasher(unsafe.Pointer(curkeyp), uintptr(hp.hash0))
+				curtophash := khash >> (64 - bucketCnt)
+				curindex := khash & mask
+				fmt.Print("[", curtophash, "|", curindex, "|", *curkeyp, "=", *(*string)(curvaluep), "], ")
+			}
+			fmt.Println()
+			b = *(**bmap)(add(unsafe.Pointer(b), bucketsize-bucketCnt)) // get next bucket
 		}
 		fmt.Println()
 	}
@@ -181,7 +195,7 @@ type maptype struct {
 	flags      uint32
 }
 
-func (mt *maptype) indirectkey() bool {   // store ptr to key instead of key itself
+func (mt *maptype) indirectkey() bool { // store ptr to key instead of key itself
 	return mt.flags&1 != 0
 }
 func (mt *maptype) indirectvalue() bool { // store ptr to value instead of value itself
@@ -190,7 +204,7 @@ func (mt *maptype) indirectvalue() bool { // store ptr to value instead of value
 
 func getKeyHashFunc(mapper interface{}) func(unsafe.Pointer, uintptr) uintptr {
 	efacer := (*eface)(unsafe.Pointer(&mapper))
-	mt := (*maptype)(unsafe.Pointer(efacer._type))   // *_type to *maptype
+	mt := (*maptype)(unsafe.Pointer(efacer._type)) // *_type to *maptype
 	return mt.key.alg.hash
 }
 
@@ -201,7 +215,7 @@ func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
 func getKeyValueBucketSize(mapper interface{}) (uintptr, uintptr, uintptr) {
 	efacer := (*eface)(unsafe.Pointer(&mapper))
 	typ := efacer._type
-	mt := (*maptype)(unsafe.Pointer(typ))   // *_type to *maptype
+	mt := (*maptype)(unsafe.Pointer(typ)) // *_type to *maptype
 	return mt.key.size, mt.elem.size, mt.bucket.size
 }
 
@@ -211,14 +225,9 @@ func TestMapType(t *testing.T) {
 	efacer := (*eface)(unsafe.Pointer(&mapEface))
 	typ := efacer._type
 
-	mt := (*maptype)(unsafe.Pointer(typ))   // *_type to *maptype
+	mt := (*maptype)(unsafe.Pointer(typ)) // *_type to *maptype
 	fmt.Println("typ size      :", mt.typ.size)
-	fmt.Println("typ ptrdata   :", mt.typ.ptrdata)
-	fmt.Println("typ hash      :", mt.typ.hash)
-	fmt.Println("typ align     :", mt.typ.align)
-	fmt.Println("typ fieldalign:", mt.typ.fieldalign)
 	fmt.Println("typ kind      :", mt.typ.kind, reflect.Kind(mt.typ.kind))
-	fmt.Println("typ str       :", mt.typ.str)
 	fmt.Println("typ ptrToThis :", mt.typ.ptrToThis)
 	fmt.Println("indirectkey:", mt.indirectkey())
 	fmt.Println("indirectvalue:", mt.indirectvalue())
@@ -235,38 +244,23 @@ func TestMapType(t *testing.T) {
 	fmt.Println()
 
 	// int64 type
-	fmt.Println("key type size      :", mt.key.size)        // 8 bytes
-	fmt.Println("key type ptrdata   :", mt.key.ptrdata)
-	fmt.Println("key type hash      :", mt.key.hash)
-	fmt.Println("key type align     :", mt.key.align)
-	fmt.Println("key type fieldalign:", mt.key.fieldalign)
-	fmt.Println("key type kind      :", mt.key.kind, reflect.Kind(mt.key.kind))   // kind134
-	fmt.Println("key type str       :", mt.key.str)
-	fmt.Println("key type ptrToThis :", mt.key.ptrToThis)   // *int64 type
+	fmt.Println("key type size      :", mt.key.size)                            // 8 bytes
+	fmt.Println("key type kind      :", mt.key.kind, reflect.Kind(mt.key.kind)) // kind134
+	fmt.Println("key type ptrToThis :", mt.key.ptrToThis)                       // *int64 type
 	fmt.Println()
 
 	// string type
-	fmt.Println("value type size      :", mt.elem.size)     // 16 bytes
-	fmt.Println("value type ptrdata   :", mt.elem.ptrdata)
-	fmt.Println("value type hash      :", mt.elem.hash)
-	fmt.Println("value type align     :", mt.elem.align)
-	fmt.Println("value type fieldalign:", mt.elem.fieldalign)
-	fmt.Println("value type kind      :", mt.elem.kind, reflect.Kind(mt.elem.kind))  // string
-	fmt.Println("value type str       :", mt.elem.str)
-	fmt.Println("value type ptrToThis :", mt.elem.ptrToThis) // *string
+	fmt.Println("value type size      :", mt.elem.size)                             // 16 bytes
+	fmt.Println("value type kind      :", mt.elem.kind, reflect.Kind(mt.elem.kind)) // string
+	fmt.Println("value type ptrToThis :", mt.elem.ptrToThis)                        // *string
 	fmt.Println()
 
 	// bucket type
-	// 208 bytes: [8]uint8 tophash (8bytes), 8 int64 keys (8*8bytes),
-	// 8 string values (8*16bytes), *overflow (8 bytes) = 8 + 64 + 128 + 8 =208 bytes
+	// 208 bytes: [8]uint8 tophash (8bytes), 8 int64 keys (8×8bytes),
+	// 8 string values (8×16bytes), *overflow (8bytes) = 8 + 64 + 128 + 8 =208 bytes
 	fmt.Println("bucket type size      :", mt.bucket.size)
-	fmt.Println("bucket type ptrdata   :", mt.bucket.ptrdata)
-	fmt.Println("bucket type hash      :", mt.bucket.hash)
-	fmt.Println("bucket type align     :", mt.bucket.align)
-	fmt.Println("bucket type fieldalign:", mt.bucket.fieldalign)
-	fmt.Println("bucket type kind      :", mt.bucket.kind, reflect.Kind(mt.bucket.kind))  // struct
-	fmt.Println("bucket type str       :", mt.bucket.str)
-	fmt.Println("bucket type ptrToThis :", mt.bucket.ptrToThis) // *bucket
+	fmt.Println("bucket type kind      :", mt.bucket.kind, reflect.Kind(mt.bucket.kind)) // struct
+	fmt.Println("bucket type ptrToThis :", mt.bucket.ptrToThis)                          // *bucket
 	fmt.Println()
 }
 
@@ -274,7 +268,22 @@ func displayMapType(mapper interface{}) {
 	fmt.Println("reflect type str:", reflect.TypeOf(mapper).String())
 	efacer := (*eface)(unsafe.Pointer(&mapper))
 	typ := efacer._type
-	mt := (*maptype)(unsafe.Pointer(typ))   // *_type to *maptype
+	/*
+	   // we can cast a *_type tp *maptype, which indicates:
+	   // for a map type in golang, not only common '_type' information is recorded in memory,
+	   // but also the key, value and buckets information.
+	   type maptype struct {
+	   	typ        _type
+	   	key        *_type
+	   	elem       *_type
+	   	bucket     *_type // internal type representing a hash bucket
+	   	keysize    uint8  // size of key slot
+	   	valuesize  uint8  // size of value slot
+	   	bucketsize uint16 // size of bucket
+	   	flags      uint32
+	   }
+	*/
+	mt := (*maptype)(unsafe.Pointer(typ))
 	fmt.Println("key type size:", mt.key.size)
 	fmt.Println("value type size:", mt.elem.size)
 	fmt.Println("bucket type size:", mt.bucket.size)
