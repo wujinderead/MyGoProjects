@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func makeTree() *BiTree {
-	bt := NewBiTree()
+func makeTree() *BSTree {
+	bt := NewBSTree()
 	bt.Set(6, "a")
 	bt.Set(3, "b")
 	bt.Set(7, "c")
@@ -18,8 +18,8 @@ func makeTree() *BiTree {
 	return bt
 }
 
-func TestBitree(t *testing.T) {
-	bt := NewBiTree()
+func TestBSTree(t *testing.T) {
+	bt := NewBSTree()
 	bt.Set(6, "a")
 	bt.Set(3, "b")
 	bt.Set(7, "c")
@@ -42,11 +42,11 @@ func TestBitree(t *testing.T) {
 	bt.Set(8, "z")
 	fmt.Println(bt)
 
-	bt.Traverse(func(node *BiTreeNode) {
+	bt.Traverse(func(node *BSTreeNode) {
 		fmt.Println(node.key, node.value)
 	})
 
-	bt.Traverse(func(node *BiTreeNode) {
+	bt.Traverse(func(node *BSTreeNode) {
 		predecessor := node.predecessor()
 		successor := node.successor()
 		fmt.Printf("key: %d, value:%s, ", node.key, node.value)
@@ -60,43 +60,52 @@ func TestBitree(t *testing.T) {
 	})
 }
 
-func TestBiTree_Remove(t *testing.T) {
-	var bt *BiTree
+func TestBSTree_Remove(t *testing.T) {
+	var bt *BSTree
 	bt = makeTree()
 	fmt.Println(bt.Remove(1))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(2))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(3))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(4))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(5))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(6))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(7))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(8))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(9))
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	fmt.Println(bt.Remove(4))
@@ -117,43 +126,49 @@ func TestBiTree_Remove(t *testing.T) {
 	fmt.Println(bt)
 }
 
-func TestBiTree_Rotate(t *testing.T) {
-	var bt *BiTree
+func TestBSTree_Rotate(t *testing.T) {
+	var bt *BSTree
 	bt = makeTree()
 	bt.rotateLeft(bt.getNode(3))
 	fmt.Println("left rotate on 3")
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	bt.rotateLeft(bt.getNode(7))
 	fmt.Println("left rotate on 7")
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	bt.rotateLeft(bt.getNode(6))
 	fmt.Println("left rotate on 6")
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	bt.rotateRight(bt.getNode(3))
 	fmt.Println("right rotate on 3")
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	bt.rotateRight(bt.getNode(6))
 	fmt.Println("right rotate on 6")
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 
 	bt = makeTree()
 	bt.rotateRight(bt.getNode(9))
 	fmt.Println("right rotate on 9")
-	fmt.Println(bt, "\n")
+	fmt.Println(bt)
+	fmt.Println()
 }
 
-func TestBiTree_getNode(t *testing.T) {
-	var bt *BiTree
+func TestBSTree_getNode(t *testing.T) {
+	var bt *BSTree
 	bt = makeTree()
-	bt.Traverse(func(node *BiTreeNode) {
+	bt.Traverse(func(node *BSTreeNode) {
 		fmt.Printf("%p \n", bt.getNode(node.key))
 		fmt.Printf("%p, key: %d, value:%s, ", node, node.key, node.value)
 		fmt.Println()

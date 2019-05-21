@@ -355,8 +355,8 @@ func (tree *RedBlackTree) Remove(key int) interface{} {
 	if node.left != nil && node.right != nil { // both sons are non-nil
 		successor := node.successor()
 		node.key = successor.key
-		node.value = successor.value
-		node = successor
+		node.value = successor.value // copy successor to node
+		node = successor             // and remove successor
 	}
 	var son *RedBlackNode = nil
 	if node.left != nil {
@@ -476,7 +476,7 @@ func (tree *RedBlackTree) Print() {
 	for i, t := range tiers {
 		init := (1 << uint(len_tier-i-1)) - 1
 		inter := (1 << uint(len_tier-i)) - 1
-		for i:=0; i<init; i++ {
+		for i := 0; i < init; i++ {
 			fmt.Print(space)
 		}
 		for index, ele := range t {

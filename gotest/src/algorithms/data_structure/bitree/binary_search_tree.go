@@ -6,21 +6,21 @@ import (
 	"fmt"
 )
 
-type BiTreeNode struct {
-	left, right, parent *BiTreeNode
+type BSTreeNode struct {
+	left, right, parent *BSTreeNode
 	key                 int
 	value               interface{}
 }
 
-type BiTree struct {
-	Root *BiTreeNode
+type BSTree struct {
+	Root *BSTreeNode
 }
 
-func NewBiTree() *BiTree {
-	return &BiTree{}
+func NewBSTree() *BSTree {
+	return &BSTree{}
 }
 
-func (tree *BiTree) rotateLeft(p *BiTreeNode) {
+func (tree *BSTree) rotateLeft(p *BSTreeNode) {
 	if p == nil || p.right == nil {
 		return
 	}
@@ -41,7 +41,7 @@ func (tree *BiTree) rotateLeft(p *BiTreeNode) {
 	p.parent = r
 }
 
-func (tree *BiTree) rotateRight(p *BiTreeNode) {
+func (tree *BSTree) rotateRight(p *BSTreeNode) {
 	if p == nil || p.left == nil {
 		return
 	}
@@ -62,11 +62,11 @@ func (tree *BiTree) rotateRight(p *BiTreeNode) {
 	p.parent = l
 }
 
-func (node *BiTreeNode) String() string {
+func (node *BSTreeNode) String() string {
 	return fmt.Sprintf("[key=%d,value=%v]", node.key, node.value)
 }
 
-func (node *BiTreeNode) predecessor() *BiTreeNode {
+func (node *BSTreeNode) predecessor() *BSTreeNode {
 	if node.left != nil {
 		node := node.left
 		for node.right != nil {
@@ -85,7 +85,7 @@ func (node *BiTreeNode) predecessor() *BiTreeNode {
 	return nil
 }
 
-func (node *BiTreeNode) successor() *BiTreeNode {
+func (node *BSTreeNode) successor() *BSTreeNode {
 	if node.right != nil {
 		node := node.right
 		for node.left != nil {
@@ -104,9 +104,9 @@ func (node *BiTreeNode) successor() *BiTreeNode {
 	return nil
 }
 
-func (tree *BiTree) Set(key int, value interface{}) {
+func (tree *BSTree) Set(key int, value interface{}) {
 	if tree.Root == nil {
-		tree.Root = &BiTreeNode{key: key, value: value}
+		tree.Root = &BSTreeNode{key: key, value: value}
 		return
 	}
 	cur := tree.Root
@@ -117,14 +117,14 @@ func (tree *BiTree) Set(key int, value interface{}) {
 		}
 		if key < cur.key {
 			if cur.left == nil {
-				cur.left = &BiTreeNode{key: key, value: value, parent: cur}
+				cur.left = &BSTreeNode{key: key, value: value, parent: cur}
 				return
 			}
 			cur = cur.left
 		}
 		if key > cur.key {
 			if cur.right == nil {
-				cur.right = &BiTreeNode{key: key, value: value, parent: cur}
+				cur.right = &BSTreeNode{key: key, value: value, parent: cur}
 				return
 			}
 			cur = cur.right
@@ -132,7 +132,7 @@ func (tree *BiTree) Set(key int, value interface{}) {
 	}
 }
 
-func (tree *BiTree) Get(key int) interface{} {
+func (tree *BSTree) Get(key int) interface{} {
 	node := tree.getNode(key)
 	if node != nil {
 		return node.value
@@ -140,7 +140,7 @@ func (tree *BiTree) Get(key int) interface{} {
 	return nil
 }
 
-func (tree *BiTree) getNode(key int) *BiTreeNode {
+func (tree *BSTree) getNode(key int) *BSTreeNode {
 	if tree.Root == nil {
 		return nil
 	}
@@ -158,7 +158,7 @@ func (tree *BiTree) getNode(key int) *BiTreeNode {
 	return nil
 }
 
-func (tree *BiTree) Remove(key int) interface{} {
+func (tree *BSTree) Remove(key int) interface{} {
 	node := tree.getNode(key)
 	if node == nil {
 		return nil
@@ -167,10 +167,10 @@ func (tree *BiTree) Remove(key int) interface{} {
 	if node.left != nil && node.right != nil { // both sons are non-nil
 		successor := node.successor()
 		node.key = successor.key
-		node.value = successor.value
-		node = successor
+		node.value = successor.value // copy successor to node
+		node = successor             // and remove successor
 	}
-	var son *BiTreeNode = nil
+	var son *BSTreeNode = nil
 	if node.left != nil {
 		son = node.left
 	} else {
@@ -201,7 +201,7 @@ func (tree *BiTree) Remove(key int) interface{} {
 	return v
 }
 
-func (tree *BiTree) String() string {
+func (tree *BSTree) String() string {
 	if tree.Root == nil {
 		return "[nil]"
 	}
@@ -215,7 +215,7 @@ func (tree *BiTree) String() string {
 	for {
 		value := l.Remove(l.Front())
 		cur_tier++
-		node, _ := value.(*BiTreeNode)
+		node, _ := value.(*BSTreeNode)
 		if node != nil {
 			l.PushBack(node.left)
 			l.PushBack(node.right)
@@ -241,14 +241,14 @@ func (tree *BiTree) String() string {
 	return buf.String()
 }
 
-func (tree *BiTree) Traverse(eachNode func(node *BiTreeNode)) {
+func (tree *BSTree) Traverse(eachNode func(node *BSTreeNode)) {
 	l := list2.New()
 	if tree.Root != nil {
 		l.PushBack(tree.Root)
 	}
 	for l.Len() > 0 {
 		value := l.Remove(l.Front())
-		node, _ := value.(*BiTreeNode)
+		node, _ := value.(*BSTreeNode)
 		eachNode(node)
 		if node.left != nil {
 			l.PushBack(node.left)
