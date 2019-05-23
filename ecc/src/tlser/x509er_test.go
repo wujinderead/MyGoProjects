@@ -243,7 +243,7 @@ func TestParseEcdsaKeyCert(t *testing.T) {
 		fmt.Println("parse key err:", err)
 		return
 	}
-	fmt.Println("rsa.D:", hex.EncodeToString(caKey.D.Bytes()))
+	fmt.Println("ec.D:", hex.EncodeToString(caKey.D.Bytes()))
 	fmt.Println()
 
 	// parse ca certificate
