@@ -18,29 +18,6 @@ import (
 	"time"
 )
 
-/*
-# ca key
-openssl genrsa -out ca.key 2048
-# ca self certificate
-openssl req -x509 -new -nodes -key ca.key -days 50000 -out ca.crt -subj "/CN=SelfCA"
-
-# sign client certificate
-openssl genrsa -out client.key 2048
-openssl req -new -key client.key -subj "/CN=clienter" -out client.csr
-openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 50000
-
-# ed25519 generate key and cert
-# openssl version >= 1.1.1
-openssl genpkey -algorithm ed25519 -out ed25519.ca.key
-openssl genpkey -algorithm ed25519 -out ed25519.server.key
-openssl req -x509 -new -nodes -key ed25519.ca.key -days 50000 -out ed25519.ca.crt -subj "/CN=CA25519"
-openssl req -new -key ed25519.server.key -out ed25519.server.csr -subj "/CN=Server25519" -config openssl.conf
-openssl x509 -req -in ed25519.server.csr -CA ed25519.ca.crt -CAkey ed25519.ca.key -CAcreateserial -out ed25519.server.crt -days 730 -extensions v3_req -extfile openssl.conf
-
-# generate ec key
-openssl ecparam -genkey -name secp384r1 -out ec.ca.key
-*/
-
 func TestCert(t *testing.T) {
 	// generate ca rsa key
 	caKey, err := rsa.GenerateKey(rand.Reader, 2048)
