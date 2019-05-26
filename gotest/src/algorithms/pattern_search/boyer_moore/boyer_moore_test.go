@@ -1,11 +1,13 @@
-package rabin_karp
+package boyer_moore
 
 import (
 	"fmt"
 	"testing"
 )
 
-func TestKmp(t *testing.T) {
+func TestBoyerMoore(t *testing.T) {
+	fmt.Println(search("ABAAABCD", "ABC"))
+	fmt.Println(search("我爱我我我爱你啊", "我爱你"))
 	fmt.Println(search("ABABDABACDABABCABAB", "ABABCABAB"))
 	fmt.Println(search("破釜破釜舟破釜破沉舟破釜破釜沉破釜破釜", "破釜破釜沉破釜破釜"))
 	fmt.Println(search("AAAAAAAAAAAAAAAAAB", "AAAAB"))
@@ -18,12 +20,7 @@ func TestKmp(t *testing.T) {
 《中华人民共和国中国人民银行法》的规定，在国务院的领导下依法独立执行货币政策，
 履行职责，开展业务，不受地方政府、社会团体和个人的干涉。`
 	pattern := "中国人民银行"
-	matched := searchRunes(txt, pattern)
-	fmt.Println(matched)
-	for _, v := range matched {
-		fmt.Println(string([]rune(txt)[v : v+len([]rune(pattern))]))
-	}
-	matched = search(txt, pattern)
+	matched := search(txt, pattern)
 	fmt.Println(matched)
 	for _, v := range matched {
 		fmt.Println(string(txt[v : v+len(pattern)]))
