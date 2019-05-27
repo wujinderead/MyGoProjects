@@ -2,61 +2,112 @@ package tlser
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"reflect"
 	"testing"
+	"time"
 )
 
-var clientKeyPem = `-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEA05Wg0KQ89Dl4BVzxzXo6cmaGF9x7fnbJSrRa/wL3sjzqRQI0
-gE8f2LCFO0QMVMDlXbqRP30dv9TOGouesIxxfNNE45UNgWbElsuKBUXwM7bcv46l
-YwMou4pwMIJ0fRzJrK7b4pfUZFRcMNr4FYOW7ZK2fmTSkOTGdfdv8uSXv8PJU9uM
-sGmNqMBxsxxyb2P5PrzKyDCBl2P5vzKXRqVqWl55gy5qIvmD9vuKeUvX2srJaDi3
-aXNQwh+GWrAdIiO7NZg8c1ekhdUC4Pj9aH0cQjns0bzsCttOLUBSzDMe+pZYuxkU
-EgjGc2guBQGrJvzsYPh8xvqsIU/LNEGsF6jaeQIDAQABAoIBAAscxq9ukMz637TY
-ZtK14q/zdoN2Tv4bWwMTadwO2deAn4U0UnGStkd5LeYo8sTYxLMhg1NkTNWwZYq7
-XoBDQAqgRfP19hmfvh91XTBdtfnhVsKwyTrkBZWj9bR2hYu0oVrybBYAh2UlkRn3
-xiPLH3gmxnLo9K4rdcjoT/bfzqCBnW9TJZl3sMSAe1d7K7+E3VCShW0jAZUeiK+r
-ehm/wuTD/vOfYzG1jy8pI5KuGS2GESja1q7GyWbabQWlwdGfts8nltEjf1You47c
-UW1c+2uwx+jtbsPW7P3mxcVtp/n9L+opkM9cpirOFQfpupgdTSfVZHzq9oH5v+U6
-up+fvakCgYEA8sXN+aGewJutGonjMLRc6N7j3G6R9cqx9GqRUyjqQAdW/ZhKrEG6
-tmizZQcRhFA8f6/ijwTdGqX1H9YOdOrUVv6CG5ZBwhCV2T8I9A4G0be4DYJPkRAT
-MGuiKA8u8JYM+96ujTvwSJzq0PqDUoFAzVDC8NfUs3AHuVoJbT/uALcCgYEA3xzP
-egWfWSjyoH92AR8XXVIGmP4a/ziH8FdxrtP2BddZ6blUlTB5Mg7HRgk7+SD/u+Rd
-7V4UyPQqHLt2aQsEY445iH0eLeZw3czJfRrqQik1l8hpEIJ3Ik5agnyASJlnwJKG
-kXo1PEeFjpNJppq8LPYjE96HcibsmP536/ZYbk8CgYEAwl4n2LLTHTYGU3cOFBJz
-SGYbXIKSDY2pCBzCGShq07SMqyBguKUvTZdp+Xq9RYfPyBMTepnUQ9+W71Q74tOY
-CcZeeKPGJg+NSY+0JWGNiB5lFzu7ZFLQajXib9woIqqf3o+chKr2Z8xqG8JVnZqq
-PTdpu9WxD7CkHnu9jGBgtuUCgYBGZinVP8bq9C+ykuViLzRJHuO0DKHqHCVQodbe
-KkV7zFqzk+XreTMUp3MbVziUQGRRHhrBFimKyvgqvr/7Hx3QaAUhWxFVvFuqsL52
-+jImlCgz72mvaus6aOzINY6o2bbSHanWZ3A6x/qNZU4dAsATk8q3r0SfsUaAc/LV
-ApMeowKBgAwGs81WwMF1acWW5PB7Kn/ksHl3L8nMYekJ6GNiywbstQF9/TqB99S9
-1T2BjWWr2HU+5Q2yFQS3xGDK+jN8Zg7CLGN34sInkm2o5gFYSRwM6AUDQGEZqKcu
-pUtRvXXrWLh0qB0RaEgtKpQ74pu4CHsg9M+awV6iCRF7Hsjp3UaB
------END RSA PRIVATE KEY-----`
-
-var clientCertPem = `-----BEGIN CERTIFICATE-----
-MIICoTCCAYkCCQCI0mIZk3JvYzANBgkqhkiG9w0BAQsFADAQMQ4wDAYDVQQDDAVv
-d25jYTAgFw0xOTA1MDcxMzI5NThaGA8yMTU2MDMyOTEzMjk1OFowEzERMA8GA1UE
-AwwIY2xpZW50ZXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDTlaDQ
-pDz0OXgFXPHNejpyZoYX3Ht+dslKtFr/AveyPOpFAjSATx/YsIU7RAxUwOVdupE/
-fR2/1M4ai56wjHF800TjlQ2BZsSWy4oFRfAztty/jqVjAyi7inAwgnR9HMmsrtvi
-l9RkVFww2vgVg5btkrZ+ZNKQ5MZ192/y5Je/w8lT24ywaY2owHGzHHJvY/k+vMrI
-MIGXY/m/MpdGpWpaXnmDLmoi+YP2+4p5S9faysloOLdpc1DCH4ZasB0iI7s1mDxz
-V6SF1QLg+P1ofRxCOezRvOwK204tQFLMMx76lli7GRQSCMZzaC4FAasm/Oxg+HzG
-+qwhT8s0QawXqNp5AgMBAAEwDQYJKoZIhvcNAQELBQADggEBAImhhcwcvR3Zjz1p
-89TXsDKMS4d1wIFNOCjf0bo/TBj/WnFHKU6jeEubSTpIzWOJpuqdTXxeB1pbOqxx
-L2CiUjWuuUVZzhC146Z1NITRf5J/8HJ55lRqSjH4eaW1DvgGfO49p75QmQcoCMUf
-fvnkxoK/f+Dr05Xm0VRUYeGBN4MWJpRtVnYuCXdlwjgNrsoRT2CmNTlwcNT/T/zy
-F2zY7cso/i3m8Bptem0vHx3RO4Masa4akUrQu6Q6Eih6K4BZqTc8tAF92u6uBMjY
-IEbUF2fHiq9FhV4sNK+3xFHG+ajEDvAL4J6HHIBEgq7MLSP9NvpiO9mX4i1QcBKL
-O32X+M8=
------END CERTIFICATE-----`
-
-func TestTls(t *testing.T) {
-	certificate, err := tls.X509KeyPair([]byte(clientCertPem), []byte(clientKeyPem))
+func TestX509LeyPair(t *testing.T) {
+	// get key pair from pem bytes
+	serverKeyPem, _ := ioutil.ReadFile("../../keys/ec.server.key")
+	serverCertPem, _ := ioutil.ReadFile("../../keys/ec.server.crt")
+	certificate, err := tls.X509KeyPair(serverCertPem, serverKeyPem)
 	if err != nil {
 		fmt.Println("get key pair err:", err)
+		return
 	}
-	fmt.Println(reflect.TypeOf(certificate.PrivateKey))
+	fmt.Println("cert key type:", reflect.TypeOf(certificate.PrivateKey))
+	for i := range certificate.Certificate {
+		fmt.Println("certificate byte[]:", hex.EncodeToString(certificate.Certificate[i]))
+	}
+	if certificate.Leaf != nil {
+		fmt.Println("leaf issuer:", certificate.Leaf.Issuer)
+		fmt.Println("leaf subject:", certificate.Leaf.Subject)
+	}
+
+	// get key pair
+	certificate, err = tls.LoadX509KeyPair("../../keys/ec.server.crt", "../../keys/ec.server.key")
+	if err != nil {
+		fmt.Println("get key pair err:", err)
+		return
+	}
+	fmt.Println("cert key type:", reflect.TypeOf(certificate.PrivateKey))
+	for i := range certificate.Certificate {
+		fmt.Println("certificate byte[]:", hex.EncodeToString(certificate.Certificate[i]))
+	}
+	if certificate.Leaf != nil {
+		fmt.Println("leaf issuer:", certificate.Leaf.Issuer)
+		fmt.Println("leaf subject:", certificate.Leaf.Subject)
+	}
+}
+
+func TestTlsConfig(t *testing.T) {
+	serverKeypair, err := tls.LoadX509KeyPair("../../keys/ec.server.crt", "../../keys/ec.server.key")
+	if err != nil {
+		t.Error("get key pair err:", err)
+		t.FailNow()
+	}
+	_, err = tls.LoadX509KeyPair("../../keys/ec.client.crt", "../../keys/ec.client.key")
+	if err != nil {
+		t.Error("get key pair err:", err)
+		t.FailNow()
+	}
+	certPool := x509.NewCertPool()
+	caCert, _ := ioutil.ReadFile("../../ec.ca.crt")
+	certPool.AppendCertsFromPEM(caCert)
+	serverConfig := &tls.Config{
+		Certificates: []tls.Certificate{serverKeypair},
+		ClientAuth:   tls.NoClientCert,
+		ClientCAs:    certPool,
+		ServerName:   "node1",
+	}
+	clientConfig := &tls.Config{
+		RootCAs: certPool,
+	}
+	listener, err := tls.Listen("tcp", "localhost:8080", serverConfig)
+	defer toClose(listener)
+	if err != nil {
+		t.Error("listen err:", err)
+		t.FailNow()
+	}
+	ch := make(chan struct{})
+	go func() {
+		time.Sleep(500 * time.Second)
+		conn, err := tls.Dial("tcp", "localhost:8080", clientConfig)
+		defer toClose(conn)
+		if err != nil {
+			fmt.Println("dial err:", err)
+		}
+		_, err = conn.Write([]byte("my name is van from " + conn.LocalAddr().String()))
+		if err != nil {
+			fmt.Println("write err:", err)
+		}
+		ch <- struct{}{}
+	}()
+	conn, err := listener.Accept()
+	defer toClose(conn)
+	if err != nil {
+		fmt.Println("accept err:", err)
+	}
+	byter := make([]byte, 128)
+	n, err := conn.Read(byter)
+	if err != nil {
+		fmt.Println("read err:", err)
+	}
+	fmt.Println("read: ", string(byter[:n]), conn.LocalAddr().String())
+	<-ch
+}
+
+func toClose(closer io.Closer) {
+	if closer != nil {
+		err := closer.Close()
+		if err != nil {
+			fmt.Println("close err:", err)
+		}
+	}
 }

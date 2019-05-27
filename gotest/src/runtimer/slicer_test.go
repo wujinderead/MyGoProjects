@@ -30,9 +30,19 @@ func TestFixedSizeArray(t *testing.T) {
 	fmt.Println(reflect.TypeOf(a), reflect.TypeOf(b),
 		reflect.TypeOf(bp), reflect.TypeOf(c)) // []int, [3]int, *[3]int, [4]complex128
 
-	fmt.Println(unsafe.Sizeof(a), unsafe.Sizeof(b), unsafe.Sizeof(c)) // 24, 48, 80
+	fmt.Println(unsafe.Sizeof(a), unsafe.Sizeof(b), unsafe.Sizeof(c)) // 24=3*8, 48=6*8, 80=5*16
 	// 3 int32 should be 12 bytes, but unsafe.Sizeof(a) is 24, so it has been aligned
 
+	// truncating fixed-size array makes a new slice header
+	// the underlying array of the slice is the fixed-size array directly
+	d := b[2:4]
+	fmt.Println("d:", d, ", type:", reflect.TypeOf(d))
+	slip := (*slice)(unsafe.Pointer(&d))
+	fmt.Println("d slice header:", int(uintptr(slip.array)), slip.len, slip.cap)
+	fmt.Println("d[0] addr:", uintptr(unsafe.Pointer(&d[0])),
+		", b[2] addr:", uintptr(unsafe.Pointer(&b[2])))   // the same
+	b[2], b[3] = 123456, 654321  // b change, d also change
+	fmt.Println("d:", d)
 }
 
 func TestSliceAppendReference(t *testing.T) {
