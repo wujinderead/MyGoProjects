@@ -158,7 +158,7 @@ func TestTypeEqual(t *testing.T) {
 	fmt.Printf("ef4 *type: %p, hash: %d\n", ef4._type, ef4._type.hash)
 }
 
-func TestInterfaceData(t *testing.T) {
+func TestConvertInterface(t *testing.T) {
 	var bird1 flyable = &bird{-2, 123, "ccc"}
 	type iface1 struct {
 		_type *_type
@@ -176,4 +176,21 @@ func TestInterfaceData(t *testing.T) {
 	up4 := (*[2]unsafe.Pointer)(unsafe.Pointer(&bird1))[1]
 	fmt.Println(up1, up2, up3, up4)
 	fmt.Println(up1 == up2, up2 == up3, up3 == up4)
+}
+
+func TestInterfaceData(t *testing.T) {
+	p1 := &bird{-2, 123, "ccc"}
+	var bird1 interface{} = p1
+	var bird2 interface{} = bird{12, 456, "dddd"}
+	var bird3 interface{} = &p1
+	fmt.Println(reflect.TypeOf(bird1), reflect.TypeOf(bird2), reflect.TypeOf(bird3))
+	typ1 := (*eface)(unsafe.Pointer(&bird1))._type
+	data1 := (*eface)(unsafe.Pointer(&bird1)).data
+	typ2 := (*eface)(unsafe.Pointer(&bird2))._type
+	data2 := (*eface)(unsafe.Pointer(&bird2)).data
+	data3 := (*eface)(unsafe.Pointer(&bird3)).data
+	fmt.Println("typ1 size:", typ1.size, "typ2 size:", typ2.size)
+	fmt.Println((*bird)(data1).uinter)     // bird1 is *bird, eface.data is also *bird
+	fmt.Println((*bird)(data2).uinter)     // bird2 is bird, eface.data is *bird
+	fmt.Println((*(**bird)(data3)).uinter) // bird3 is **bird, eface.data is **bird
 }

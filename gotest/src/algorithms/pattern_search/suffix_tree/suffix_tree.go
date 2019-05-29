@@ -12,9 +12,23 @@ type SuffixTreeNode struct {
 
 type SuffixTree struct {
 	Root *SuffixTreeNode
+	Text string
 }
 
-func NewSuffixTree(text string) *SuffixTree {
+func NewSuffixTreeUkkonen(text string) *SuffixTree {
 	// todo build a suffix tree
-	return nil
+	root := new(SuffixTreeNode)
+	activeNode := root
+	activeEdge := -1
+	activeLength := 0
+	end := new(int)
+	remainingSuffixCount := 0
+	for i := 0; i < len(text); i++ {
+		cur := text[i]
+		remainingSuffixCount++
+		for j := 0; j < remainingSuffixCount; j++ {
+
+		}
+	}
+	return &SuffixTree{Root: root, Text: text}
 }
