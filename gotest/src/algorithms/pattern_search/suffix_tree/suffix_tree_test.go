@@ -13,7 +13,6 @@ var strs = []string{
 	"ABCDEFG",
 	"ABABABA",
 	"abcabxabcd",
-	//"CCAAACCCGATTA",
 	"abc",
 	"xabxac",
 	"xabxa",
@@ -23,7 +22,7 @@ var strs = []string{
 }
 
 func TestNewSuffixTreeUkkonen(t *testing.T) {
-	str := "CCAAACCC"
+	str := "CCAAACCCGATTA"
 	tree := NewSuffixTreeUkkonen(str)
 	tree.DfsTraversal(func(node *SuffixTreeNode) {
 		if node == tree.Root {
@@ -51,6 +50,10 @@ func TestNewSuffixTreeUkkonen(t *testing.T) {
 func TestIterativeDfsTraverse(t *testing.T) {
 	for i := range strs {
 		testIterativeDfsTraverse(strs[i], t)
+	}
+	str := "CCAAACCCGATTA"
+	for i := 1; i <= len(str); i++ {
+		testIterativeDfsTraverse(str[:i], t)
 	}
 }
 

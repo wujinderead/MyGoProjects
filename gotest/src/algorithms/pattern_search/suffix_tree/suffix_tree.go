@@ -32,14 +32,16 @@ func NewSuffixTreeNode() *SuffixTreeNode {
 // mistake I have made:
 // 1. when process suffix link after AddLeaf, need to set preInternalNode to nil.
 //    e.g, preInternalNode=A, activeNode=B, add a leaf in B, then suffixLink, A->B.
-//    next turn, if not set preInternalNode to nil, it will be
-//    preInternalNode=A, activeNode=root, suffix link will be A->root, which is wrong.
+//    next turn, it may be preInternalNode=A, activeNode=root,
+//    if not set preInternalNode to nil, suffix link will be A->root, which is wrong.
 // 2. the node to split can be a leaf or internal node, not just leaf.
 //    so the trick is to create a new node as old node's father and change links.
 // 3. the last suffix to add must be a leaf of root. the previous suffixes are added
 //    not only by split, but also by AddLeaf. after add leaf in middle, also need to
 //    find next active point by suffix link
 // 4. a loop to the active point is needed
+// 5. if activeLength == 0 && activeNode.children[curByte]!=nil, it's the end of
+//    current phase, so need to link suffix link for previous internal node.
 func NewSuffixTreeUkkonen(text string) *SuffixTree {
 	root := NewSuffixTreeNode()
 	activeNode := root
@@ -98,13 +100,17 @@ func NewSuffixTreeUkkonen(text string) *SuffixTree {
 					if preInternalNode != nil {
 						preInternalNode.suffixLink = activeNode
 						// set preInternalNode to null to prevent unexpected link
-						// mistake1
+						// mistake 1
 						preInternalNode = nil
 					}
 				} else {
 					// active edge present, suffix won't be added explicitly in current phase
 					// increment active length and exit current phase
 					activeLength = 1
+					// mistake 5
+					if preInternalNode != nil {
+						preInternalNode.suffixLink = activeNode
+					}
 					break
 				}
 			} else {
