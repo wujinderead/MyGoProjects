@@ -41,7 +41,7 @@ func TestTypes(t *testing.T) {
 		efacer := (*eface)(unsafe.Pointer(&arrayer))
 		arrayt := (*arraytype)(unsafe.Pointer(efacer._type)) // extended to from *_type to *arraytype
 		fmt.Println("reflect type    :", reflect.TypeOf(arrayer).String())
-		fmt.Println("array size      :", arrayt.typ.size) // 24 for slice
+		fmt.Println("array size      :", arrayt.typ.size) // 120 = 3×40
 		fmt.Println("array hash      :", arrayt.typ.hash)
 		fmt.Println("array kind      :", arrayt.typ.kind, reflect.Kind(arrayt.typ.kind))
 		fmt.Println("array str       :", arrayt.typ.str)

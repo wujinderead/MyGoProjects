@@ -40,9 +40,12 @@ func TestFixedSizeArray(t *testing.T) {
 	slip := (*slice)(unsafe.Pointer(&d))
 	fmt.Println("d slice header:", int(uintptr(slip.array)), slip.len, slip.cap)
 	fmt.Println("d[0] addr:", uintptr(unsafe.Pointer(&d[0])),
-		", b[2] addr:", uintptr(unsafe.Pointer(&b[2])))   // the same
-	b[2], b[3] = 123456, 654321  // b change, d also change
+		", b[2] addr:", uintptr(unsafe.Pointer(&b[2]))) // the same
+	b[2], b[3] = 123456, 654321 // b change, d also change
 	fmt.Println("d:", d)
+
+	e := [...]int64{2: 3, 4: 5, 0: 1} // fixed-size array can specify index
+	fmt.Println(e)                    // [1 0 3 0 5]
 }
 
 func TestSliceAppendReference(t *testing.T) {
