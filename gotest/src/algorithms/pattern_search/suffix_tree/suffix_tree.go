@@ -127,7 +127,7 @@ func NewSuffixTreeUkkonen(text string) *SuffixTree {
 					// mistake 2
 					// split current edge, the trick here is:
 					// use current edge to contain remain characters,
-					// create a new node as current node's father
+					// create a new node as current node's father and active node's child
 					newNode := NewSuffixTreeNode()
 					newNode.start = curEdge.start
 					*newNode.end = activePointIndex
@@ -171,26 +171,38 @@ func NewSuffixTreeUkkonen(text string) *SuffixTree {
 		}
 	}
 
-	dfsToSetSuffixLength(root, root, 0)
+	dfsToSetSuffixIndex(root)
 	return &SuffixTree{Root: root, Text: text}
 }
 
-func dfsToSetSuffixLength(root, node *SuffixTreeNode, len int) {
-	var curLen int
-	if node == root {
-		curLen = 0
-	} else {
-		curLen = *node.end - node.start + 1
-	}
-	isLeaf := true
+func dfsToSetSuffixIndex(root *SuffixTreeNode) {
+	curLen := 0
+	stack := list.New()
 	for i := 0; i < alphabet; i++ {
-		if node.children[i] != nil {
-			isLeaf = false
-			dfsToSetSuffixLength(root, node.children[i], len+curLen)
+		if root.children[i] != nil {
+			stack.PushBack(root.children[i])
 		}
 	}
-	if isLeaf {
-		node.suffixIndex = *node.end - (len + curLen) + 1
+	visited := make(map[*SuffixTreeNode]struct{})
+	for stack.Len() > 0 {
+		cur := stack.Back().Value.(*SuffixTreeNode)
+		if _, ok := visited[cur]; !ok { // not visited, peek and add children
+			visited[cur] = struct{}{}
+			curLen += *cur.end - cur.start + 1
+			isLeaf := true
+			for i := 0; i < alphabet; i++ {
+				if cur.children[i] != nil {
+					stack.PushBack(cur.children[i])
+					isLeaf = false
+				}
+			}
+			if isLeaf { // leaf
+				cur.suffixIndex = *cur.end - curLen + 1
+			}
+		} else { // visited, pop
+			stack.Remove(stack.Back())
+			curLen -= *cur.end - cur.start + 1
+		}
 	}
 }
 

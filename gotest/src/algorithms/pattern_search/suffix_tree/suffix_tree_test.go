@@ -98,7 +98,6 @@ func testIterativeDfsTraverse(text string, t *testing.T) {
 			if cur.suffixIndex == -1 { // non leaf
 				curLen -= *cur.end - cur.start + 1
 			} else if cur.suffixIndex != len(tree.Text) { // leaf
-				copy(str[curLen:], tree.Text[cur.start:*cur.end])
 				curLen -= *cur.end - cur.start
 			}
 		}
