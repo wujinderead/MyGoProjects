@@ -26,6 +26,15 @@ func TestNewSuffixTree(t *testing.T) {
 	testIterativeDfsTraverse(str, t)
 }
 
+// empty string, root still has a child represent $
+func TestEmptyString(t *testing.T) {
+	tree := NewSuffixTreeSiblingList("")
+	fmt.Println(tree.Root.children.start)
+	fmt.Println(*tree.Root.children.end)
+	fmt.Println(tree.Root.children.children)
+	fmt.Println(tree.Root.children.sibling)
+}
+
 func TestIterativeDfsTraverse(t *testing.T) {
 	for i := range strs {
 		testIterativeDfsTraverse(strs[i], t)
@@ -35,7 +44,6 @@ func TestIterativeDfsTraverse(t *testing.T) {
 		testIterativeDfsTraverse(string(str[:i]), t)
 	}
 	testIterativeDfsTraverse("CCAAACCCGATTA", t)
-	testIterativeDfsTraverse("🅒🅒🅐🅐🅐🅒🅒🅒🅖🅐🅣🅣🅐", t)
 }
 
 func testIterativeDfsTraverse(text string, t *testing.T) {

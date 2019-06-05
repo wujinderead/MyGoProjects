@@ -18,7 +18,6 @@ var strs = []string{
 	"xabxa",
 	"THIS IS A TEST TEXT",
 	"AABAACAADAABAAABAA",
-	"A",
 }
 
 func TestNewSuffixTreeUkkonen(t *testing.T) {
@@ -45,6 +44,14 @@ func TestNewSuffixTreeUkkonen(t *testing.T) {
 		fmt.Println()
 	})
 	testIterativeDfsTraverse(str, t)
+}
+
+// empty string, root still has a child represent $
+func TestEmptyString(t *testing.T) {
+	tree := NewSuffixTreeUkkonen("")
+	fmt.Println(tree.Root.children[0].start)
+	fmt.Println(*tree.Root.children[0].end)
+	fmt.Println(tree.Root.children[0].children)
 }
 
 func TestIterativeDfsTraverse(t *testing.T) {
