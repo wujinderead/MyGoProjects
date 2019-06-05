@@ -1,4 +1,4 @@
-package bitree
+package avl_tree
 
 import (
 	"bytes"
@@ -207,37 +207,37 @@ func (tree *AvlTree) String() string {
 	}
 	l := list2.New()
 	l.PushBack(tree.Root)
-	len_tier := 1
-	cur_tier := 0
-	all_nil := true
+	lenTier := 1
+	curTier := 0
+	allNil := true
 	buf := new(bytes.Buffer)
-	cur_size := 0
+	curSize := 0
 	for {
 		value := l.Remove(l.Front())
-		cur_tier++
+		curTier++
 		node, _ := value.(*AvlNode)
 		if node != nil {
 			l.PushBack(node.left)
 			l.PushBack(node.right)
 			buf.WriteString(node.String() + ", ")
-			all_nil = false
+			allNil = false
 		} else {
 			l.PushBack(nil)
 			l.PushBack(nil)
 			buf.WriteString("[nil], ")
 		}
-		if cur_tier == len_tier {
-			if all_nil {
+		if curTier == lenTier {
+			if allNil {
 				break
 			}
 			buf.WriteString("\n")
-			cur_tier = 0
-			len_tier = 2 * len_tier
-			all_nil = true
-			cur_size = buf.Len()
+			curTier = 0
+			lenTier = 2 * lenTier
+			allNil = true
+			curSize = buf.Len()
 		}
 	}
-	buf.Truncate(cur_size - 1)
+	buf.Truncate(curSize - 1)
 	return buf.String()
 }
 

@@ -1,4 +1,4 @@
-package bitree
+package red_balck_tree
 
 import (
 	"bytes"
@@ -285,33 +285,29 @@ func (tree *RedBlackTree) fixAfterDeletion(x *RedBlackNode) {
 func parentOf(x *RedBlackNode) *RedBlackNode {
 	if x != nil {
 		return x.parent
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func leftOf(x *RedBlackNode) *RedBlackNode {
 	if x != nil {
 		return x.left
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func rightOf(x *RedBlackNode) *RedBlackNode {
 	if x != nil {
 		return x.right
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func colorOf(x *RedBlackNode) bool {
 	if x != nil {
 		return x.color
-	} else {
-		return Black
 	}
+	return Black // color for nil is black
 }
 
 func setColor(x *RedBlackNode, color bool) {
@@ -353,9 +349,9 @@ func (tree *RedBlackTree) Remove(key int) interface{} {
 	}
 	v := node.value
 	if node.left != nil && node.right != nil { // both sons are non-nil
-		successor := node.successor()
+		successor := node.successor() // successor must exist
 		node.key = successor.key
-		node.value = successor.value // copy successor to node
+		node.value = successor.value // copy successor's kv to node
 		node = successor             // and remove successor
 	}
 	var son *RedBlackNode = nil
@@ -371,7 +367,7 @@ func (tree *RedBlackTree) Remove(key int) interface{} {
 		} else if node == node.parent.left {
 			node.parent.left = son
 		} else {
-			node.parent.right = son
+			node.parent.right = son // use son to replace node
 		}
 		node.left, node.right, node.parent = nil, nil, nil
 		if node.color == Black { // only fix deletion when it's black
@@ -383,7 +379,7 @@ func (tree *RedBlackTree) Remove(key int) interface{} {
 		if node.color == Black { // only fix deletion when it's black
 			tree.fixAfterDeletion(node)
 		}
-		if node.parent != nil {
+		if node.parent != nil { // unlink node
 			if node == node.parent.left {
 				node.parent.left = nil
 			} else {
@@ -401,37 +397,37 @@ func (tree *RedBlackTree) String() string {
 	}
 	l := list2.New()
 	l.PushBack(tree.Root)
-	len_tier := 1
-	cur_tier := 0
-	all_nil := true
+	lenTier := 1
+	curTier := 0
+	allNil := true
 	buf := new(bytes.Buffer)
-	cur_size := 0
+	curSize := 0
 	for {
 		value := l.Remove(l.Front())
-		cur_tier++
+		curTier++
 		node, _ := value.(*RedBlackNode)
 		if node != nil {
 			l.PushBack(node.left)
 			l.PushBack(node.right)
 			buf.WriteString(node.String() + ", ")
-			all_nil = false
+			allNil = false
 		} else {
 			l.PushBack(nil)
 			l.PushBack(nil)
 			buf.WriteString("x, ")
 		}
-		if cur_tier == len_tier {
-			if all_nil {
+		if curTier == lenTier {
+			if allNil {
 				break
 			}
 			buf.WriteString("\n")
-			cur_tier = 0
-			len_tier = 2 * len_tier
-			all_nil = true
-			cur_size = buf.Len()
+			curTier = 0
+			lenTier = 2 * lenTier
+			allNil = true
+			curSize = buf.Len()
 		}
 	}
-	buf.Truncate(cur_size - 1)
+	buf.Truncate(curSize - 1)
 	return buf.String()
 }
 
@@ -443,39 +439,39 @@ func (tree *RedBlackTree) Print() {
 	space := "  "
 	l := list2.New()
 	l.PushBack(tree.Root)
-	len_tier := 1
-	cur_tier := 0
-	all_nil := true
+	lenTier := 1
+	curTier := 0
+	allNil := true
 	tiers := make([][]string, 0)
-	tier := make([]string, len_tier)
+	tier := make([]string, lenTier)
 	for {
 		value := l.Remove(l.Front())
 		node, _ := value.(*RedBlackNode)
-		tier[cur_tier] = stringifyNode(node)
-		cur_tier++
+		tier[curTier] = stringifyNode(node)
+		curTier++
 		if node != nil {
 			l.PushBack(node.left)
 			l.PushBack(node.right)
-			all_nil = false
+			allNil = false
 		} else {
 			l.PushBack(nil)
 			l.PushBack(nil)
 		}
-		if cur_tier == len_tier {
-			if all_nil {
+		if curTier == lenTier {
+			if allNil {
 				break
 			}
-			cur_tier = 0
-			len_tier = 2 * len_tier
+			curTier = 0
+			lenTier = 2 * lenTier
 			tiers = append(tiers, tier)
-			tier = make([]string, len_tier)
-			all_nil = true
+			tier = make([]string, lenTier)
+			allNil = true
 		}
 	}
-	len_tier = len(tiers)
+	lenTier = len(tiers)
 	for i, t := range tiers {
-		init := (1 << uint(len_tier-i-1)) - 1
-		inter := (1 << uint(len_tier-i)) - 1
+		init := (1 << uint(lenTier-i-1)) - 1
+		inter := (1 << uint(lenTier-i)) - 1
 		for i := 0; i < init; i++ {
 			fmt.Print(space)
 		}
@@ -507,4 +503,50 @@ func (tree *RedBlackTree) Traverse(eachNode func(node *RedBlackNode)) {
 			l.PushBack(node.right)
 		}
 	}
+}
+
+type iter struct {
+	cur *RedBlackNode
+}
+
+func (tree *RedBlackTree) Iter() *iter {
+	first := tree.Root
+	if first == nil {
+		return &iter{nil}
+	}
+	for first.left != nil {
+		first = first.left
+	}
+	return &iter{first}
+}
+
+func (tree *RedBlackTree) ReverseIter() *iter {
+	last := tree.Root
+	if last == nil {
+		return &iter{nil}
+	}
+	for last.left != nil {
+		last = last.right
+	}
+	return &iter{last}
+}
+
+func (it *iter) HasPrev() bool {
+	return it.cur != nil
+}
+
+func (it *iter) Prev() *RedBlackNode {
+	cur := it.cur
+	it.cur = cur.predecessor()
+	return cur
+}
+
+func (it *iter) HasNext() bool {
+	return it.cur != nil
+}
+
+func (it *iter) Next() *RedBlackNode {
+	cur := it.cur
+	it.cur = cur.successor()
+	return cur
 }
