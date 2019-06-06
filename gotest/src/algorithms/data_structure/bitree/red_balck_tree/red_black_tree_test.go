@@ -2,7 +2,10 @@ package red_balck_tree
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
 	"testing"
+	"time"
 )
 
 func TestRbTree(t *testing.T) {
@@ -103,5 +106,55 @@ func TestRedBlackTreeIterator(t *testing.T) {
 			fmt.Print(it.Prev().key, " ")
 		}
 		fmt.Println()
+	}
+}
+
+func TestRedBlackTreeHeight(t *testing.T) {
+	n := (1 << 20) - 1
+	rander := rand.New(rand.NewSource(time.Now().UnixNano()))
+	ints := rander.Perm(n)
+	tree := NewRedBlackTree()
+	for i := range ints {
+		tree.Set(ints[i], nil)
+	}
+	left := make(map[*RedBlackNode]int)
+	right := make(map[*RedBlackNode]int)
+	getHeight(tree.Root, left, right)
+	fmt.Println("root left, right:", left[tree.Root], right[tree.Root])
+	fmt.Println("left right map len:", len(left), len(right))
+	maxdiff := float64(0)
+	curdiff := float64(0)
+	alldiff := float64(0)
+	nonleaf := 0
+	for k := range left {
+		curdiff = math.Abs(float64(left[k] - right[k]))
+		maxdiff = math.Max(maxdiff, curdiff)
+		if left[k] == 0 && right[k] == 0 {
+			continue // skip leaf
+		}
+		nonleaf++
+		alldiff += curdiff
+	}
+	fmt.Println("max diff:", maxdiff)
+	fmt.Println("nonleaf:", nonleaf, ", avg diff:", alldiff/float64(nonleaf))
+}
+
+var max = func(a, b int) int {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func getHeight(t *RedBlackNode, left, right map[*RedBlackNode]int) int {
+	if t == nil {
+		return 0
+	} else {
+		leftHeight := getHeight(t.left, left, right)
+		rightHeight := getHeight(t.right, left, right)
+		left[t] = leftHeight
+		right[t] = rightHeight
+		return 1 + max(leftHeight, rightHeight)
 	}
 }

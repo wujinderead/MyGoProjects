@@ -23,7 +23,7 @@ type RedBlackTree struct {
 }
 
 func NewRedBlackTree() *RedBlackTree {
-	return &RedBlackTree{}
+	return &RedBlackTree{nil}
 }
 
 func (tree *RedBlackTree) rotateLeft(p *RedBlackNode) {
@@ -165,20 +165,14 @@ func (tree *RedBlackTree) fixAfterInsertion(x *RedBlackNode) {
 				setColor(parentOf(x), Black)
 				setColor(parentOf(parentOf(x)), Red)
 				x = parentOf(parentOf(x))
-				fmt.Println("case 1: ")
-				tree.Print()
 			} else {
 				if x == rightOf(parentOf(x)) {
 					x = parentOf(x)
 					tree.rotateLeft(x) // to this to make x == leftOf(parentOf(x))
-					fmt.Println("case 2: ")
-					tree.Print()
 				}
 				setColor(parentOf(x), Black)
 				setColor(parentOf(parentOf(x)), Red)
 				tree.rotateRight(parentOf(parentOf(x)))
-				fmt.Println("case 3: ")
-				tree.Print()
 			}
 		} else { // p is pp's right son
 			sib := leftOf(parentOf(parentOf(x))) // sib is pp's left son
@@ -187,20 +181,14 @@ func (tree *RedBlackTree) fixAfterInsertion(x *RedBlackNode) {
 				setColor(parentOf(x), Black)
 				setColor(parentOf(parentOf(x)), Red)
 				x = parentOf(parentOf(x))
-				fmt.Println("case 4: ")
-				tree.Print()
 			} else {
 				if x == leftOf(parentOf(x)) {
 					x = parentOf(x)
 					tree.rotateRight(x)
-					fmt.Println("case 5: ")
-					tree.Print()
 				}
 				setColor(parentOf(x), Black)
 				setColor(parentOf(parentOf(x)), Red)
 				tree.rotateLeft(parentOf(parentOf(x)))
-				fmt.Println("case 6: ")
-				tree.Print()
 			}
 		}
 	}
@@ -208,8 +196,6 @@ func (tree *RedBlackTree) fixAfterInsertion(x *RedBlackNode) {
 }
 
 func (tree *RedBlackTree) fixAfterDeletion(x *RedBlackNode) {
-	fmt.Println("before fix: ")
-	tree.Print()
 	for x != tree.Root && colorOf(x) == Black {
 		if x == leftOf(parentOf(x)) {
 			sib := rightOf(parentOf(x))
@@ -218,30 +204,22 @@ func (tree *RedBlackTree) fixAfterDeletion(x *RedBlackNode) {
 				setColor(parentOf(x), Red)
 				tree.rotateLeft(parentOf(x))
 				sib = rightOf(parentOf(x))
-				fmt.Println("case 1: ")
-				tree.Print()
 			}
 			if colorOf(leftOf(sib)) == Black && colorOf(rightOf(sib)) == Black {
 				setColor(sib, Red)
 				x = parentOf(x)
-				fmt.Println("case 2: ")
-				tree.Print()
 			} else {
 				if colorOf(rightOf(sib)) == Black {
 					setColor(leftOf(sib), Black)
 					setColor(sib, Red)
 					tree.rotateRight(sib)
 					sib = rightOf(parentOf(x))
-					fmt.Println("case 3: ")
-					tree.Print()
 				}
 				setColor(sib, colorOf(parentOf(x)))
 				setColor(parentOf(x), Black)
 				setColor(rightOf(sib), Black)
 				tree.rotateLeft(parentOf(x))
 				x = tree.Root
-				fmt.Println("case 4: ")
-				tree.Print()
 			}
 		} else {
 			sib := leftOf(parentOf(x))
@@ -250,36 +228,26 @@ func (tree *RedBlackTree) fixAfterDeletion(x *RedBlackNode) {
 				setColor(parentOf(x), Red)
 				tree.rotateRight(parentOf(x))
 				sib = leftOf(parentOf(x))
-				fmt.Println("case 5: ")
-				tree.Print()
 			}
 			if colorOf(rightOf(sib)) == Black && colorOf(leftOf(sib)) == Black {
 				setColor(sib, Red)
 				x = parentOf(x)
-				fmt.Println("case 6: ")
-				tree.Print()
 			} else {
 				if colorOf(leftOf(sib)) == Black {
 					setColor(rightOf(sib), Black)
 					setColor(sib, Red)
 					tree.rotateLeft(sib)
 					sib = leftOf(parentOf(x))
-					fmt.Println("case 7: ")
-					tree.Print()
 				}
 				setColor(sib, colorOf(parentOf(x)))
 				setColor(parentOf(x), Black)
 				setColor(leftOf(sib), Black)
 				tree.rotateRight(parentOf(x))
 				x = tree.Root
-				fmt.Println("case 8: ")
-				tree.Print()
 			}
 		}
 	}
 	setColor(x, Black)
-	fmt.Println("after: ")
-	tree.Print()
 }
 
 func parentOf(x *RedBlackNode) *RedBlackNode {
@@ -379,7 +347,7 @@ func (tree *RedBlackTree) Remove(key int) interface{} {
 		if node.color == Black { // only fix deletion when it's black
 			tree.fixAfterDeletion(node)
 		}
-		if node.parent != nil { // unlink node
+		if node.parent != nil { // unlink node after fix
 			if node == node.parent.left {
 				node.parent.left = nil
 			} else {
