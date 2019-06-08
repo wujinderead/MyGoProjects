@@ -13,11 +13,12 @@ type AvlNode struct {
 }
 
 type AvlTree struct {
-	Root *AvlNode
+	Root  *AvlNode
+	stack *stack
 }
 
 func NewAvlTree() *AvlTree {
-	return &AvlTree{}
+	return &AvlTree{Root: nil, stack: newStack()}
 }
 
 func (tree *AvlTree) rotateLeft(p *AvlNode) *AvlNode {
@@ -68,7 +69,7 @@ func (tree *AvlTree) Set(key int, value interface{}) {
 		return
 	}
 	cur := tree.Root
-	stack := list2.New()
+	tree.stack.reinit()
 	for {
 		if cur.key == key {
 			cur.value = value
@@ -78,29 +79,29 @@ func (tree *AvlTree) Set(key int, value interface{}) {
 			if cur.left == nil {
 				cur.left = &AvlNode{key: key, value: value, height: 1}
 				cur.height = 2
-				tree.fixAfterInsert(stack, cur, cur.left)
+				tree.fixAfterInsert(tree.stack, cur, cur.left)
 				return
 			}
-			stack.PushBack(cur)
+			tree.stack.push(cur)
 			cur = cur.left
 		}
 		if key > cur.key {
 			if cur.right == nil {
 				cur.right = &AvlNode{key: key, value: value, height: 1}
 				cur.height = 2
-				tree.fixAfterInsert(stack, cur, cur.right)
+				tree.fixAfterInsert(tree.stack, cur, cur.right)
 				return
 			}
-			stack.PushBack(cur)
+			tree.stack.push(cur)
 			cur = cur.right
 		}
 	}
 }
 
-func (tree *AvlTree) fixAfterInsert(stack *list2.List, p, q *AvlNode) {
+func (tree *AvlTree) fixAfterInsert(stack *stack, p, q *AvlNode) {
 	var r, newr *AvlNode
-	for stack.Len() > 0 {
-		r = stack.Remove(stack.Back()).(*AvlNode)
+	for stack.len() > 0 {
+		r = stack.pop()
 		diff := heightOf(r.left) - heightOf(r.right)
 		if diff >= -1 && diff <= 1 { // r balanced
 			r.height = max(heightOf(r.left), heightOf(r.right)) + 1 // update height
@@ -122,8 +123,8 @@ func (tree *AvlTree) fixAfterInsert(stack *list2.List, p, q *AvlNode) {
 			// right right
 			newr = tree.rotateLeft(r) // store new r
 		}
-		if stack.Len() > 0 { // peek r's parent to set pointer
-			rp := stack.Back().Value.(*AvlNode)
+		if stack.len() > 0 { // peek r's parent to set pointer
+			rp := stack.peek()
 			if rp.left == r {
 				rp.left = newr
 			} else {
@@ -143,9 +144,9 @@ func stringifyNode(node *AvlNode) string {
 
 func (tree *AvlTree) Remove(key int) interface{} {
 	cur := tree.Root
-	stack := list2.New()
+	tree.stack.reinit()
 	for cur != nil && cur.key != key {
-		stack.PushBack(cur)
+		tree.stack.push(cur)
 		if key < cur.key {
 			cur = cur.left
 		} else {
@@ -159,10 +160,10 @@ func (tree *AvlTree) Remove(key int) interface{} {
 	value := cur.value
 	// if both son non-nil, delete successor
 	if cur.left != nil && cur.right != nil {
-		stack.PushBack(cur)
+		tree.stack.push(cur)
 		p := cur.right
 		for p.left != nil {
-			stack.PushBack(p)
+			tree.stack.push(p)
 			p = p.left
 		}
 		cur.key = p.key
@@ -170,8 +171,8 @@ func (tree *AvlTree) Remove(key int) interface{} {
 		cur = p // set cur to successor
 	}
 	var p *AvlNode = nil
-	if stack.Len() > 0 {
-		p = stack.Back().Value.(*AvlNode)
+	if tree.stack.len() > 0 {
+		p = tree.stack.peek()
 	}
 	var son *AvlNode = nil
 	if cur.left != nil {
@@ -189,7 +190,7 @@ func (tree *AvlTree) Remove(key int) interface{} {
 		}
 		cur.left, cur.right = nil, nil
 		// fix
-		tree.fixAfterDelete(stack)
+		tree.fixAfterDelete(tree.stack)
 	} else if p == nil { // deleting root, root has no son
 		tree.Root = nil
 	} else { // deleting a leaf
@@ -199,7 +200,7 @@ func (tree *AvlTree) Remove(key int) interface{} {
 			p.right = nil
 		}
 		// fix
-		tree.fixAfterDelete(stack)
+		tree.fixAfterDelete(tree.stack)
 	}
 	return value
 }
@@ -207,9 +208,9 @@ func (tree *AvlTree) Remove(key int) interface{} {
 // stack stores the deleted node's parents.
 // delete a node can immediately make its parent unbalance,
 // so process the parents one by one.
-func (tree *AvlTree) fixAfterDelete(stack *list2.List) {
-	for stack.Len() > 0 {
-		cur := stack.Remove(stack.Back()).(*AvlNode)
+func (tree *AvlTree) fixAfterDelete(stack *stack) {
+	for stack.len() > 0 {
+		cur := stack.pop()
 		oldHeight := cur.height
 		newcur := cur
 		leftHeight := heightOf(cur.left)
@@ -231,8 +232,8 @@ func (tree *AvlTree) fixAfterDelete(stack *list2.List) {
 
 		// if rebalance preformed, newcur's height is already ok
 		newcur.height = max(heightOf(newcur.left), heightOf(newcur.right)) + 1
-		if stack.Len() > 0 { // peek cur's parent to set pointer
-			parent := stack.Back().Value.(*AvlNode)
+		if stack.len() > 0 { // peek cur's parent to set pointer
+			parent := stack.peek()
 			if parent.left == cur {
 				parent.left = newcur
 			} else {
@@ -352,4 +353,35 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+type stack struct {
+	top   int
+	slice []*AvlNode
+}
+
+func newStack() *stack {
+	return &stack{-1, make([]*AvlNode, 64)}
+}
+
+func (s *stack) push(node *AvlNode) {
+	s.top++
+	s.slice[s.top] = node
+}
+
+func (s *stack) pop() *AvlNode {
+	s.top--
+	return s.slice[s.top+1]
+}
+
+func (s *stack) peek() *AvlNode {
+	return s.slice[s.top]
+}
+
+func (s *stack) len() int {
+	return s.top + 1
+}
+
+func (s *stack) reinit() {
+	s.top = -1
 }
