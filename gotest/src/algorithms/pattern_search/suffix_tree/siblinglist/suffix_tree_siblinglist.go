@@ -228,3 +228,24 @@ func dfsToSetSuffixIndex(root *SuffixTreeNode) {
 		}
 	}
 }
+
+func (tree *SuffixTree) containSubstring(sub string) bool {
+	return true
+}
+
+func (tree *SuffixTree) findAllSubstring(sub string) []int {
+	subs := make([]int, 0)
+	return subs
+}
+
+func (tree *SuffixTree) longestRepeatedSubstring() (astart, bstart, lenght int) {
+	return 0, 0, 0
+}
+
+func (tree *SuffixTree) longestPalindromicSubstring() (start, lenght int) {
+	return 0, 0
+}
+
+func longestCommonSubstring(stra, strb string) (astart, bstart, length int) {
+	return 0, 0, 0
+}

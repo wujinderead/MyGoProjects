@@ -1,7 +1,7 @@
 package kmp
 
 // search pattern in txt and return start positions if match
-func search(txt, pattern string) []int {
+func Search(txt, pattern string) []int {
 	matched := make([]int, 0)
 	if len(txt) < len(pattern) {
 		return matched

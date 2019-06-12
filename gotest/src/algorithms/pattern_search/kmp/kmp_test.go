@@ -6,10 +6,10 @@ import (
 )
 
 func TestKmp(t *testing.T) {
-	fmt.Println(search("ABABDABACDABABCABAB", "ABABCABAB"))
-	fmt.Println(search("破釜破釜舟破釜破沉舟破釜破釜沉破釜破釜", "破釜破釜沉破釜破釜"))
-	fmt.Println(search("AAAAAAAAAAAAAAAAAB", "AAAAB"))
-	fmt.Println(search("ABABABCABABABCABABABC", "ABABAC"))
+	fmt.Println(Search("ABABDABACDABABCABAB", "ABABCABAB"))
+	fmt.Println(Search("破釜破釜舟破釜破沉舟破釜破釜沉破釜破釜", "破釜破釜沉破釜破釜"))
+	fmt.Println(Search("AAAAAAAAAAAAAAAAAB", "AAAAB"))
+	fmt.Println(Search("ABABABCABABABCABABABC", "ABABAC"))
 	txt := `中国人民银行（The People's Bank Of China，英文简称PBOC），简称央行，
 是中华人民共和国的中央银行，中华人民共和国国务院组成部门。在国务院领导下，制定和执行货币政策，防范和化解金融风险，
 维护金融稳定。1948年12月1日，在华北银行、北海银行、西北农民银行的基础上在河北省石家庄市合并组成中国人民银行。
@@ -23,7 +23,7 @@ func TestKmp(t *testing.T) {
 	for _, v := range matched {
 		fmt.Println(string([]rune(txt)[v : v+len([]rune(pattern))]))
 	}
-	matched = search(txt, pattern)
+	matched = Search(txt, pattern)
 	fmt.Println(matched)
 	for _, v := range matched {
 		fmt.Println(string(txt[v : v+len(pattern)]))
