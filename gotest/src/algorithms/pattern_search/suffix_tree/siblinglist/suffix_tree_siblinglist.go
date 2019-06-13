@@ -206,25 +206,23 @@ func (node *SuffixTreeNode) addChild(child *SuffixTreeNode) {
 func dfsToSetSuffixIndex(root *SuffixTreeNode) {
 	curLen := 0
 	stack := list.New()
-	for n := root.children; n != nil; n = n.sibling { // first add root's children
-		stack.PushBack(n)
-	}
-	visited := make(map[*SuffixTreeNode]struct{})
-	for stack.Len() > 0 {
-		cur := stack.Back().Value.(*SuffixTreeNode)
-		if _, ok := visited[cur]; !ok { // not visited, peek and add children
-			visited[cur] = struct{}{}
+	cur := root.children // root do not represent start or end, so start with first child
+	for cur != nil {
+		if cur.children != nil {
 			curLen += *cur.end - cur.start + 1
-			if cur.children != nil { // internal node
-				for n := cur.children; n != nil; n = n.sibling {
-					stack.PushBack(n)
-				}
-			} else { // leaf
-				cur.suffixIndex = *cur.end - curLen + 1
+			stack.PushBack(cur)
+			cur = cur.children
+		} else {
+			// it should be as follows, but here we merge it
+			// curLen += *cur.end - cur.start + 1         // add cur len
+			// cur.suffixIndex = *cur.end - curLen + 1    // calculate suffix index = end-len+1
+			// curLen -= *cur.end - cur.start + 1         // sub cur len
+			cur.suffixIndex = cur.start - curLen
+			for stack.Len() > 0 && cur.sibling == nil {
+				cur = stack.Remove(stack.Back()).(*SuffixTreeNode)
+				curLen -= *cur.end - cur.start + 1
 			}
-		} else { // visited, pop
-			stack.Remove(stack.Back())
-			curLen -= *cur.end - cur.start + 1
+			cur = cur.sibling
 		}
 	}
 }

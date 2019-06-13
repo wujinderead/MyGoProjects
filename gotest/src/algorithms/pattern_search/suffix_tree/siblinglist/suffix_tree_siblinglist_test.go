@@ -43,6 +43,7 @@ func TestEmptyString(t *testing.T) {
 	fmt.Println(*tree.Root.children.end)
 	fmt.Println(tree.Root.children.children)
 	fmt.Println(tree.Root.children.sibling)
+	testIterativeDfsTraverse("", t)
 }
 
 func TestIterativeDfsTraverse(t *testing.T) {
@@ -63,37 +64,31 @@ func testIterativeDfsTraverse(text string, t *testing.T) {
 	appeared := make([]int, len(tree.Runes))
 	str := make([]rune, len(tree.Runes))
 	curLen := 0
+	cur := tree.Root.children // root do not represent start or end, so start with first child
 	stack := list.New()
-	for n := tree.Root.children; n != nil; n = n.sibling { // first add root's children
-		stack.PushBack(n)
-	}
-	visited := make(map[*SuffixTreeNode]struct{})
-	for stack.Len() > 0 {
-		cur := stack.Back().Value.(*SuffixTreeNode)
-		if _, ok := visited[cur]; !ok { // not visited, peek and add children
-			visited[cur] = struct{}{}
-			if cur.children != nil { // non leaf
-				for n := cur.children; n != nil; n = n.sibling { // first add root's children
-					stack.PushBack(n)
-				}
-				copy(str[curLen:], tree.Runes[cur.start:*cur.end+1])
-				curLen += *cur.end - cur.start + 1
-			} else if cur.suffixIndex != len(tree.Runes) { // leaf
+	for cur != nil {
+		if cur.children != nil { // non leaf
+			copy(str[curLen:], tree.Runes[cur.start:*cur.end+1])
+			curLen += *cur.end - cur.start + 1
+			stack.PushBack(cur)
+			cur = cur.children
+		} else { // leaf
+			// when cur.suffixIndex==len(tree.Runes), it represents '$',
+			// in which we are not interested
+			if cur.suffixIndex != len(tree.Runes) {
 				copy(str[curLen:], tree.Runes[cur.start:*cur.end])
-				curLen += *cur.end - cur.start
-				fmt.Println(cur.suffixIndex, string(str[:curLen]))
-				if string(tree.Runes[cur.suffixIndex:]) != string(str[:curLen]) {
-					t.Fatal("suffix index do not equal")
+				fmt.Println(cur.suffixIndex, string(str[:curLen+*cur.end-cur.start]))
+				if string(tree.Runes[cur.suffixIndex:]) != string(str[:curLen+*cur.end-cur.start]) {
+					t.Error("suffix index do not equal")
 				}
 				appeared[cur.suffixIndex] = cur.suffixIndex + 1
 			}
-		} else { // visited, pop
-			stack.Remove(stack.Back())
-			if cur.children != nil { // non leaf
+			// find a non-nil sib
+			for stack.Len() > 0 && cur.sibling == nil {
+				cur = stack.Remove(stack.Back()).(*SuffixTreeNode)
 				curLen -= *cur.end - cur.start + 1
-			} else if cur.suffixIndex != len(tree.Runes) { // leaf
-				curLen -= *cur.end - cur.start
 			}
+			cur = cur.sibling
 		}
 	}
 
@@ -148,7 +143,7 @@ func TestLongestRepeated(t *testing.T) {
 	strs := [][]string{
 		{"GEEKSFORGEEKS", "GEEKS"},
 		{"AAAAAAAAAA", "AAAAAAAAA"},
-		{"ABCDEFG", nil},
+		{"ABCDEFG", ""},
 		{"ABABABA", "ABABA"},
 		{"你好你好你好你", "你好你好你"},
 		{"ATCGATCGA", "ATCGA"},
@@ -175,7 +170,7 @@ func TestLongestCommon(t *testing.T) {
 		{"GeeksforGeeks", "GeeksQuiz", "Geeks"},
 		{"OldSite:GeeksforGeeks.org", "NewSite:GeeksQuiz.com", "Site:Geeks"},
 		{"abcde", "fgefg", "e"},
-		{"pqrst", "uvwxyz", nil}}
+		{"pqrst", "uvwxyz", ""}}
 	for i := range strs {
 		a, b, exp := strs[i][0], strs[i][1], strs[i][2]
 		as, bs, length := longestCommonSubstring(a, b)
@@ -225,4 +220,81 @@ func equalInts(a, b []int) bool {
 		}
 	}
 	return true
+}
+
+func TestTreePreorderTraverse(t *testing.T) {
+	type node struct {
+		s   string
+		sib *node
+		son *node
+	}
+	// sibling list to represent a tree:
+	//
+	//   A                               A
+	//   |                           /   |  \
+	//   B----------C----D         B     C   D
+	//   |          |            / | \   |
+	//   E---F---G  H            E F G   H
+	//   |       |  |           / \  |  / \
+	//   I-J     K  L-M         I J  K  L M
+	J := &node{"Juliet", nil, nil}
+	I := &node{"India", J, nil}
+	K := &node{"Kilo", nil, nil}
+	G := &node{"Golf", nil, K}
+	F := &node{"Foxtrot", G, nil}
+	E := &node{"Echo", F, I}
+	M := &node{"Mike", nil, nil}
+	L := &node{"Lima", M, nil}
+	H := &node{"Hotel", nil, L}
+	D := &node{"Delta", nil, nil}
+	C := &node{"Charlie", D, H}
+	B := &node{"Bravo", C, E}
+	A := &node{"Alpha", nil, B}
+	{
+		buf := make([]byte, 30)
+		stack := list.New()
+		curlen := 0
+		cur := A
+		for cur != nil {
+			if cur.son != nil {
+				// non leaf
+				copy(buf[curlen:curlen+len(cur.s)], []byte(cur.s))
+				curlen += len(cur.s)
+				stack.PushBack(cur)
+				cur = cur.son
+			} else {
+				// leaf
+				copy(buf[curlen:curlen+len(cur.s)], []byte(cur.s))
+				fmt.Println(string(buf[:curlen+len(cur.s)]))
+				for stack.Len() > 0 && cur.sib == nil {
+					cur = stack.Remove(stack.Back()).(*node)
+					curlen -= len(cur.s)
+				}
+				cur = cur.sib
+			}
+		}
+	}
+	fmt.Println()
+	{
+		// a more concise way, add nil to stack to avoid second loop
+		buf := make([]byte, 30)
+		stack := list.New()
+		curlen := 0
+		cur := A
+		for cur != nil || stack.Len() > 0 {
+			if cur != nil {
+				copy(buf[curlen:curlen+len(cur.s)], []byte(cur.s))
+				curlen += len(cur.s)
+				stack.PushBack(cur)
+				cur = cur.son
+			} else {
+				cur = stack.Remove(stack.Back()).(*node)
+				if cur.son == nil {
+					fmt.Println(string(buf[:curlen]))
+				}
+				curlen -= len(cur.s)
+				cur = cur.sib
+			}
+		}
+	}
 }
