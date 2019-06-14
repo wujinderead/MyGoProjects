@@ -3,7 +3,7 @@ package kmp
 // search pattern in txt and return start positions if match
 func Search(txt, pattern string) []int {
 	matched := make([]int, 0)
-	if len(txt) < len(pattern) {
+	if len(txt) < len(pattern) || len(pattern) == 0 {
 		return matched
 	}
 	lps := getLongestProperPrefixAlsoSuffixBytes(pattern)
