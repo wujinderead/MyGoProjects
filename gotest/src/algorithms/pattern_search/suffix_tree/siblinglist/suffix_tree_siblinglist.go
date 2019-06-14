@@ -27,9 +27,10 @@ type SuffixTreeNode struct {
 }
 
 type SuffixTree struct {
-	Root  *SuffixTreeNode
-	Text  string
-	Runes []rune
+	Root    *SuffixTreeNode
+	Text    string
+	Runes   []rune
+	indices []int
 }
 
 func NewSuffixTreeSiblingList(text string) *SuffixTree {
@@ -39,15 +40,10 @@ func NewSuffixTreeSiblingList(text string) *SuffixTree {
 	activeLength := 0
 	end := new(int)
 	remainCount := 0
-	runes := []rune(text)
-	for i := 0; i <= len(runes); i++ { // i, current index
+	runes, indices := toRunes(text)
+	for i := 0; i < len(runes); i++ { // i, current index
 		// get current character
-		var curRune rune
-		if i == len(runes) {
-			curRune = 0
-		} else {
-			curRune = runes[i]
-		}
+		curRune := runes[i]
 
 		*end = i                                  // increment all end
 		remainCount++                             // increment remain suffix count and loop
@@ -165,7 +161,7 @@ func NewSuffixTreeSiblingList(text string) *SuffixTree {
 	}
 
 	dfsToSetSuffixIndex(root)
-	return &SuffixTree{Root: root, Text: text, Runes: runes}
+	return &SuffixTree{Root: root, Text: text, Runes: runes, indices: indices}
 }
 
 func (node *SuffixTreeNode) getChildForRune(runes []rune, r rune) *SuffixTreeNode {
@@ -227,23 +223,146 @@ func dfsToSetSuffixIndex(root *SuffixTreeNode) {
 	}
 }
 
+func toRunes(str string) (runes []rune, indices []int) {
+	n := 0
+	for range str {
+		n++
+	}
+	runes = make([]rune, n+1, n+1)
+	indices = make([]int, n+1, n+1)
+	n = 0
+	for i, v := range str {
+		runes[n] = v
+		indices[n] = i
+		n++
+	}
+	runes[n] = 0
+	indices[n] = len(str)
+	return
+}
+
 func (tree *SuffixTree) containSubstring(sub string) bool {
+	cur := tree.Root
+	subrunes := []rune(sub)
+	curind := 0
+	lensub := len(subrunes)
+	for curind < lensub {
+		cur = cur.getChildForRune(tree.Runes, subrunes[curind])
+		if cur == nil {
+			return false
+		}
+		i := cur.start
+		for i <= *cur.end && curind < lensub {
+			if tree.Runes[i] != subrunes[curind] {
+				return false
+			}
+			i++
+			curind++
+		}
+	}
 	return true
 }
 
-func (tree *SuffixTree) findAllSubstring(sub string) []int {
-	subs := make([]int, 0)
+func (tree *SuffixTree) findAllSubstring(sub string) (subs []int) {
+	subs = make([]int, 0)
+	cur := tree.Root
+	subrunes := []rune(sub)
+	curind := 0
+	lensub := len(subrunes)
+	for curind < lensub {
+		cur = cur.getChildForRune(tree.Runes, subrunes[curind])
+		if cur == nil {
+			return // not a substring
+		}
+		i := cur.start
+		for i <= *cur.end && curind < lensub {
+			if tree.Runes[i] != subrunes[curind] {
+				return // not a substring
+			}
+			i++
+			curind++
+		}
+	}
+	// substring is found, then find all leaves of cur node, and retrieve suffix index
+	stack := list.New()
+	if cur.children == nil { // already a leaf
+		subs = append(subs, tree.indices[cur.suffixIndex])
+		return
+	}
+	cur = cur.children
+	for cur != nil {
+		if cur.children != nil { // non leaf
+			stack.PushBack(cur)
+			cur = cur.children
+		} else { // leaf
+			subs = append(subs, tree.indices[cur.suffixIndex]) // convert rune index to byte index
+			for stack.Len() > 0 && cur.sibling == nil {
+				cur = stack.Remove(stack.Back()).(*SuffixTreeNode)
+			}
+			cur = cur.sibling
+		}
+	}
 	return subs
 }
 
-func (tree *SuffixTree) longestRepeatedSubstring() (astart, bstart, lenght int) {
-	return 0, 0, 0
+func (tree *SuffixTree) longestRepeatedSubstring() (start, maxbytelen int) {
+	start, maxbytelen = -1, 0
+	cur := tree.Root.children
+	curlen := 0
+	maxrunelen := 0
+	stack := list.New()
+	for cur != nil {
+		if cur.children != nil { // non leaf
+			curlen += *cur.end - cur.start + 1
+			stack.PushBack(cur)
+			cur = cur.children
+		} else { // leaf
+			if curlen > maxrunelen {
+				maxrunelen = curlen
+				start = tree.indices[cur.suffixIndex] // convert from rune index to byte index
+				maxbytelen = tree.indices[cur.suffixIndex+maxrunelen] - tree.indices[cur.suffixIndex]
+			}
+			for stack.Len() > 0 && cur.sibling == nil {
+				cur = stack.Remove(stack.Back()).(*SuffixTreeNode)
+				curlen -= *cur.end - cur.start + 1
+			}
+			cur = cur.sibling
+		}
+	}
+	return
 }
 
-func (tree *SuffixTree) longestPalindromicSubstring() (start, lenght int) {
-	return 0, 0
-}
-
-func longestCommonSubstring(stra, strb string) (astart, bstart, length int) {
-	return 0, 0, 0
+func (tree *SuffixTree) longestRepeatedSubstringTwoStart() (astart, bstart, maxbytelen int) {
+	astart, bstart, maxbytelen = -1, -1, 0
+	cur := tree.Root.children
+	curlen := 0
+	maxrunelen := 0
+	stack := list.New()
+	var maxnode *SuffixTreeNode = nil
+	for cur != nil {
+		if cur.children != nil { // non leaf
+			curlen += *cur.end - cur.start + 1
+			stack.PushBack(cur)
+			cur = cur.children
+		} else { // leaf
+			if curlen > maxrunelen {
+				maxrunelen = curlen
+				maxnode = stack.Back().Value.(*SuffixTreeNode)
+			}
+			for stack.Len() > 0 && cur.sibling == nil {
+				cur = stack.Remove(stack.Back()).(*SuffixTreeNode)
+				curlen -= *cur.end - cur.start + 1
+			}
+			cur = cur.sibling
+		}
+	}
+	// maxlen internal node must contain 2 and only 2 leaf nodes
+	if maxnode != nil {
+		n := maxnode.children
+		maxbytelen = tree.indices[n.suffixIndex+maxrunelen] - tree.indices[n.suffixIndex]
+		astart = tree.indices[n.suffixIndex] // convert from rune index to byte index
+		n = n.sibling
+		bstart = tree.indices[n.suffixIndex]
+	}
+	return
 }

@@ -4,6 +4,7 @@ import (
 	"algorithms/pattern_search/kmp"
 	"container/list"
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -73,16 +74,12 @@ func testIterativeDfsTraverse(text string, t *testing.T) {
 			stack.PushBack(cur)
 			cur = cur.children
 		} else { // leaf
-			// when cur.suffixIndex==len(tree.Runes), it represents '$',
-			// in which we are not interested
-			if cur.suffixIndex != len(tree.Runes) {
-				copy(str[curLen:], tree.Runes[cur.start:*cur.end])
-				fmt.Println(cur.suffixIndex, string(str[:curLen+*cur.end-cur.start]))
-				if string(tree.Runes[cur.suffixIndex:]) != string(str[:curLen+*cur.end-cur.start]) {
-					t.Error("suffix index do not equal")
-				}
-				appeared[cur.suffixIndex] = cur.suffixIndex + 1
+			copy(str[curLen:], tree.Runes[cur.start:*cur.end])
+			fmt.Println(cur.suffixIndex, string(str[:curLen+*cur.end-cur.start]))
+			if string(tree.Runes[cur.suffixIndex:len(tree.Runes)-1]) != string(str[:curLen+*cur.end-cur.start]) {
+				t.Error("suffix index do not equal")
 			}
+			appeared[cur.suffixIndex] = cur.suffixIndex + 1
 			// find a non-nil sib
 			for stack.Len() > 0 && cur.sibling == nil {
 				cur = stack.Remove(stack.Back()).(*SuffixTreeNode)
@@ -103,7 +100,31 @@ func testIterativeDfsTraverse(text string, t *testing.T) {
 func TestContainSub(t *testing.T) {
 	str := "THIS IS A TEST TEXT"
 	tree := NewSuffixTreeSiblingList(str)
-	subs := []string{"TEST", "A", " ", "IS A", " IS A ", "TEST1", "THIS IS GOOD", "TES", "TESA", "ISB"}
+	subs := []string{"TEST", "A", " ", "IS A", " IS A ", "TEST1", "THIS IS GOOD", "TES", "TESA", "ISB", ""}
+	for i := range subs {
+		sub := subs[i]
+		my := tree.containSubstring(sub)
+		rt := strings.Contains(str, sub)
+		if my != rt {
+			t.Errorf("contain '%s'? expect: %v, got %v", sub, rt, my)
+		}
+	}
+	str = "我我的的的我我我天的哪哪的"
+	tree = NewSuffixTreeSiblingList(str)
+	subs = []string{"我我的的的我我我天的哪哪的",
+		"我我的的",
+		"我我的的我天的哪",
+		"哪的",
+		"的我我我天的哪",
+		"我我天的",
+		"我我的的我天的哪哪的",
+		"我我的的的我我我天的哪哪的",
+		"我我A",
+		"我我的的的我我的哪的",
+		"的的我我我天的哪",
+		"的的我我的我天的哪",
+		"的的的我我我天的哪",
+	}
 	for i := range subs {
 		sub := subs[i]
 		my := tree.containSubstring(sub)
@@ -117,11 +138,12 @@ func TestContainSub(t *testing.T) {
 func TestAllSub(t *testing.T) {
 	strs := [][]string{{"GEEKSFORGEEKS", "GEEKS", "GEEK1", "FOR"},
 		{"AABAACAADAABAAABAA", "AABA", "AA", "AAE", "ABAA"},
-		{"AAAAAAAAA", "AAAA", "AA", "A", "AB"},
+		{"AAAAAAAAA", "AAAA", "AA", "A", "AB", ""},
 		{txt, "中国人民银行"}}
 	for i := range strs {
 		str := strs[i][0]
 		tree := NewSuffixTreeSiblingList(str)
+		fmt.Println(str)
 		for j := 1; j < len(strs[i]); j++ {
 			sub := strs[i][j]
 			occurs := tree.findAllSubstring(sub)
@@ -130,7 +152,6 @@ func TestAllSub(t *testing.T) {
 				t.Errorf("sub error for '%s' '%s', expect: %v, got: %v",
 					str, sub, ref, occurs)
 			}
-			fmt.Println(str)
 			for _, v := range occurs {
 				fmt.Println(v, ":", str[v:v+len(sub)])
 			}
@@ -147,65 +168,36 @@ func TestLongestRepeated(t *testing.T) {
 		{"ABABABA", "ABABA"},
 		{"你好你好你好你", "你好你好你"},
 		{"ATCGATCGA", "ATCGA"},
+		{"CCAAACCCGATTA", "AA"},
 		{"banana", "ana"},
-		{"abcpqrabpqpq", "ab"},
+		{"abcpqrabpqpq", "pq"},
 		{"pqrpqpqabab", "ab"}}
 	for i := range strs {
 		str, exp := strs[i][0], strs[i][1]
 		tree := NewSuffixTreeSiblingList(str)
-		as, bs, length := tree.longestRepeatedSubstring()
-		if str[as:as+length] != exp || str[bs:bs+length] != exp {
+		as, bs, length := tree.longestRepeatedSubstringTwoStart()
+		fmt.Println(as, bs, length)
+		if length > 0 && (str[as:as+length] != exp || str[bs:bs+length] != exp) {
 			t.Errorf("error for '%s', expect '%s', got '%s'",
 				str, exp, str[as:as+length])
 		}
-		fmt.Println(as, bs, length)
-		fmt.Println(str, str[as:as+length], str[bs:bs+length])
-		fmt.Println()
-	}
-}
-
-func TestLongestCommon(t *testing.T) {
-	strs := [][]string{{"xabxac", "abcabxabcd", "abxa"},
-		{"xabxaabxa", "babxba", "abx"},
-		{"GeeksforGeeks", "GeeksQuiz", "Geeks"},
-		{"OldSite:GeeksforGeeks.org", "NewSite:GeeksQuiz.com", "Site:Geeks"},
-		{"abcde", "fgefg", "e"},
-		{"pqrst", "uvwxyz", ""}}
-	for i := range strs {
-		a, b, exp := strs[i][0], strs[i][1], strs[i][2]
-		as, bs, length := longestCommonSubstring(a, b)
-		if a[as:as+length] != exp || b[bs:bs+length] != exp {
-			t.Errorf("error for '%s' and '%s', expect '%s', got '%s'",
-				a, b, exp, a[as:as+length])
+		if length > 0 {
+			fmt.Println(str, str[as:as+length], str[bs:bs+length])
 		}
-		fmt.Println(as, bs, length)
-		fmt.Println(a, b, exp)
 		fmt.Println()
 	}
-}
-
-func TestLongestPalindromic(t *testing.T) {
-	strs := [][]string{{"cabbaabb", "bbaabb"},
-		{"forgeeksskeegfor", "geeksskeeg"},
-		{"abcde", "a"},
-		{"abcdae", "a"},
-		{"abacd", "aba"},
-		{"abcdc", "cdc"},
-		{"abacdfgdcaba", "aba"},
-		{"xyabacdfgdcaba", "aba"},
-		{"xababayz", "ababa"},
-		{"xabax", "xabax"},
-		{"", ""}}
 	for i := range strs {
 		str, exp := strs[i][0], strs[i][1]
 		tree := NewSuffixTreeSiblingList(str)
-		start, length := tree.longestPalindromicSubstring()
-		if str[start:start+length] != exp {
+		as, length := tree.longestRepeatedSubstring()
+		fmt.Println(as, length)
+		if length > 0 && str[as:as+length] != exp {
 			t.Errorf("error for '%s', expect '%s', got '%s'",
-				str, exp, str[start:start+length])
+				str, exp, str[as:as+length])
 		}
-		fmt.Println(start, length)
-		fmt.Println(str, str[start:start+length])
+		if length > 0 {
+			fmt.Println(str, str[as:as+length])
+		}
 		fmt.Println()
 	}
 }
@@ -214,6 +206,8 @@ func equalInts(a, b []int) bool {
 	if len(a) != len(b) {
 		return false
 	}
+	sort.Sort(sort.IntSlice(a))
+	sort.Sort(sort.IntSlice(b))
 	for i := 0; i < len(a); i++ {
 		if a[i] != b[i] {
 			return false
@@ -297,4 +291,15 @@ func TestTreePreorderTraverse(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestToRunes(t *testing.T) {
+	str := "西ñ班A牙"
+	runes, indices := toRunes(str)
+	fmt.Println(runes)
+	fmt.Println(indices)
+	fmt.Println(string(runes[3:5]))
+	fmt.Println(str[indices[3]:indices[5]])
+	fmt.Println(string(runes[2:4]))
+	fmt.Println(str[indices[2]:indices[4]])
 }
