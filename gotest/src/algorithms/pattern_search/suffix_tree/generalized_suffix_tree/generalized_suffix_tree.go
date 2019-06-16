@@ -8,24 +8,40 @@ type SuffixTreeNode struct {
 	suffixLink  *SuffixTreeNode
 	start       int
 	end         *int // use pointer to make all ends expand with O(1) time
-	suffixIndex int
+	suffixIndex []int
 }
 
 type SuffixTree struct {
 	Root    *SuffixTreeNode
-	Text    string
-	Runes   []rune
-	indices []int
+	Text    []string
+	Runes   [][]rune
+	indices [][]int
 }
 
-func NewSuffixTreeSiblingList(text string) *SuffixTree {
-	root := new(SuffixTreeNode)
+func NewSuffixTreeSiblingList(texts []string) *SuffixTree {
+	tree := new(SuffixTree)
+	tree.Root = new(SuffixTreeNode)
+	tree.Text = texts
+	tree.Runes = make([][]rune, len(texts))
+	tree.indices = make([][]int, len(texts))
+	for i := range texts {
+		addStrToTree(tree, texts, i)
+	}
+	return tree
+}
+
+func addStrToTree(tree *SuffixTree, texts []string, index int) {
+	root := tree.Root
 	activeNode := root
 	activeEdgeIndex := -1
 	activeLength := 0
 	end := new(int)
 	remainCount := 0
-	runes, indices := toRunes(text)
+	runes, indices := toRunes(texts[index])
+	tree.Runes[index] = runes
+	tree.indices[index] = indices
+	num := len(texts)
+
 	for i := 0; i < len(runes); i++ { // i, current index
 		// get current character
 		curRune := runes[i]
@@ -61,7 +77,7 @@ func NewSuffixTreeSiblingList(text string) *SuffixTree {
 				// check if active edge going out of active node
 				if activeNode.getChildForRune(runes, curRune) == nil { // use curByte for last phase
 					// active edge not present, create a new edge
-					newNode := new(SuffixTreeNode)
+					newNode := NewNode(num)
 					newNode.start = i
 					newNode.end = end
 					activeNode.addChild(newNode)
@@ -90,6 +106,16 @@ func NewSuffixTreeSiblingList(text string) *SuffixTree {
 				curEdge := activeNode.getChildForRune(runes, runes[activeEdgeIndex])
 				activePointIndex := curEdge.start + activeLength - 1
 				if runes[activePointIndex+1] == curRune {
+					// for single string, this situation (last rune is already present) won't happen.
+					// for multiple strings, this is possible. when it occurs, we need to mark the
+					// suffix index for current string as -2, to indicate that it is the terminal
+					// of current string. afterwards, decrease remain count, because we actually have
+					// added a suffix. then continue to add other remaining suffixes.
+					if curRune == 0 {
+						curEdge.suffixIndex[index] = -2 // mark as -2 to indicate a new terminal
+						remainCount--
+						continue
+					}
 					// current runes character present after active point,
 					// suffix won't be added explicitly in current phase
 					// increment active length and exit current phase
@@ -100,7 +126,7 @@ func NewSuffixTreeSiblingList(text string) *SuffixTree {
 					// split current edge, the trick here is:
 					// use current edge to contain remain characters,
 					// create a new node as current node's father
-					newNode := new(SuffixTreeNode)
+					newNode := NewNode(num)
 					newNode.start = curEdge.start
 					newNode.end = new(int)
 					*newNode.end = activePointIndex
@@ -112,7 +138,7 @@ func NewSuffixTreeSiblingList(text string) *SuffixTree {
 					newNode.addChild(curEdge)
 
 					// create new leaf for current runes character
-					newLeaf := new(SuffixTreeNode)
+					newLeaf := NewNode(num)
 					newLeaf.start = i
 					newLeaf.end = end         // leaf end equals to global end
 					newNode.addChild(newLeaf) // leaf added to new node
@@ -145,8 +171,16 @@ func NewSuffixTreeSiblingList(text string) *SuffixTree {
 		}
 	}
 
-	dfsToSetSuffixIndex(root)
-	return &SuffixTree{Root: root, Text: text, Runes: runes, indices: indices}
+	dfsToSetSuffixIndex(root, index, end)
+}
+
+func NewNode(n int) *SuffixTreeNode {
+	node := new(SuffixTreeNode)
+	node.suffixIndex = make([]int, n)
+	for i := 0; i < n; i++ {
+		node.suffixIndex[i] = -1 // -1 means not a leaf
+	}
+	return node
 }
 
 func (node *SuffixTreeNode) getChildForRune(runes []rune, r rune) *SuffixTreeNode {
@@ -184,7 +218,9 @@ func (node *SuffixTreeNode) addChild(child *SuffixTreeNode) {
 	}
 }
 
-func dfsToSetSuffixIndex(root *SuffixTreeNode) {
+// todo finish update suffix index
+// use curend to specify whether a leaf is added for current str
+func dfsToSetSuffixIndex(root *SuffixTreeNode, index int, curend *int) {
 	curLen := 0
 	stack := list.New()
 	cur := root.children // root do not represent start or end, so start with first child
@@ -198,7 +234,7 @@ func dfsToSetSuffixIndex(root *SuffixTreeNode) {
 			// curLen += *cur.end - cur.start + 1         // add cur len
 			// cur.suffixIndex = *cur.end - curLen + 1    // calculate suffix index = end-len+1
 			// curLen -= *cur.end - cur.start + 1         // sub cur len
-			cur.suffixIndex = cur.start - curLen
+			//cur.suffixIndex = cur.start - curLen
 			for stack.Len() > 0 && cur.sibling == nil {
 				cur = stack.Remove(stack.Back()).(*SuffixTreeNode)
 				curLen -= *cur.end - cur.start + 1
@@ -213,15 +249,15 @@ func toRunes(str string) (runes []rune, indices []int) {
 	for range str {
 		n++
 	}
-	runes = make([]rune, n+1, n+1)
-	indices = make([]int, n+1, n+1)
+	runes = make([]rune, n+1)
+	indices = make([]int, n+1)
 	n = 0
 	for i, v := range str {
 		runes[n] = v
 		indices[n] = i
 		n++
 	}
-	runes[n] = 0
+	runes[n] = 0 // set last rune to 0
 	indices[n] = len(str)
 	return
 }

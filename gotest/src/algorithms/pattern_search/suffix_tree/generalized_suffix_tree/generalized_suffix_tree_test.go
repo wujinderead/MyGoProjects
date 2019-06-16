@@ -39,8 +39,7 @@ func TestLongestPalindromic(t *testing.T) {
 		{"", ""}}
 	for i := range strs {
 		str, exp := strs[i][0], strs[i][1]
-		tree := NewSuffixTreeSiblingList(str)
-		start, length := tree.longestPalindromicSubstring()
+		start, length := longestPalindromicSubstring(str)
 		if str[start:start+length] != exp {
 			t.Errorf("error for '%s', expect '%s', got '%s'",
 				str, exp, str[start:start+length])
