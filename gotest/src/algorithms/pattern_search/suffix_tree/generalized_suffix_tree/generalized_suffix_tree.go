@@ -1,11 +1,10 @@
 package generalized_suffix_tree
 
-import "container/list"
-
 type SuffixTreeNode struct {
 	sibling     *SuffixTreeNode
 	children    *SuffixTreeNode
 	suffixLink  *SuffixTreeNode
+	textindex   int // this node represent texts[textindex][start:end+1]
 	start       int
 	end         *int // use pointer to make all ends expand with O(1) time
 	suffixIndex []int
@@ -13,17 +12,19 @@ type SuffixTreeNode struct {
 
 type SuffixTree struct {
 	Root    *SuffixTreeNode
-	Text    []string
+	Texts   []string
 	Runes   [][]rune
 	indices [][]int
+	stack   *stack
 }
 
-func NewSuffixTreeSiblingList(texts []string) *SuffixTree {
+func NewGeneralizedSuffixTree(texts []string) *SuffixTree {
 	tree := new(SuffixTree)
 	tree.Root = new(SuffixTreeNode)
-	tree.Text = texts
+	tree.Texts = texts
 	tree.Runes = make([][]rune, len(texts))
 	tree.indices = make([][]int, len(texts))
+	tree.stack = newStack()
 	for i := range texts {
 		addStrToTree(tree, texts, i)
 	}
@@ -42,7 +43,7 @@ func addStrToTree(tree *SuffixTree, texts []string, index int) {
 	tree.indices[index] = indices
 	num := len(texts)
 
-	for i := 0; i < len(runes); i++ { // i, current index
+	for i := 0; i < len(runes); i++ { // i, current rune index
 		// get current character
 		curRune := runes[i]
 
@@ -55,7 +56,7 @@ func addStrToTree(tree *SuffixTree, texts []string, index int) {
 			// mistake 4
 			for activeLength > 0 {
 				// if active length>0, there must be an edge
-				curEdge := activeNode.getChildForRune(runes, runes[activeEdgeIndex])
+				curEdge := activeNode.getChildForRune(tree.Runes, runes[activeEdgeIndex])
 				curEdgeLen := *curEdge.end - curEdge.start + 1
 				// if active len == edge len (can only be equal)
 				// walk down to reset active node
@@ -75,11 +76,13 @@ func addStrToTree(tree *SuffixTree, texts []string, index int) {
 				activeEdgeIndex = i
 
 				// check if active edge going out of active node
-				if activeNode.getChildForRune(runes, curRune) == nil { // use curByte for last phase
+				edge := activeNode.getChildForRune(tree.Runes, curRune)
+				if edge == nil { // use curByte for last phase
 					// active edge not present, create a new edge
 					newNode := NewNode(num)
 					newNode.start = i
 					newNode.end = end
+					newNode.textindex = index
 					activeNode.addChild(newNode)
 					// create new node (add new suffix), need to decrease remainCount
 					remainCount--
@@ -92,20 +95,27 @@ func addStrToTree(tree *SuffixTree, texts []string, index int) {
 						preInternalNode = nil
 					}
 				} else {
-					// active edge present, suffix won't be added explicitly in current phase
-					// increment active length and exit current phase
-					activeLength = 1
-					// mistake 5
-					if preInternalNode != nil {
-						preInternalNode.suffixLink = activeNode
+					// terminal edge already present
+					if curRune == 0 {
+						edge.suffixIndex[index] = -2 // mark as -2 to indicate a new terminal
+						remainCount--
+						continue
+					} else {
+						// active edge present, suffix won't be added explicitly in current phase
+						// increment active length and exit current phase
+						activeLength = 1
+						// mistake 5
+						if preInternalNode != nil {
+							preInternalNode.suffixLink = activeNode
+						}
+						break
 					}
-					break
 				}
 			} else {
 				// if active length>0, check whether current runes character present after active point
-				curEdge := activeNode.getChildForRune(runes, runes[activeEdgeIndex])
+				curEdge := activeNode.getChildForRune(tree.Runes, runes[activeEdgeIndex])
 				activePointIndex := curEdge.start + activeLength - 1
-				if runes[activePointIndex+1] == curRune {
+				if tree.Runes[curEdge.textindex][activePointIndex+1] == curRune {
 					// for single string, this situation (last rune is already present) won't happen.
 					// for multiple strings, this is possible. when it occurs, we need to mark the
 					// suffix index for current string as -2, to indicate that it is the terminal
@@ -114,13 +124,13 @@ func addStrToTree(tree *SuffixTree, texts []string, index int) {
 					if curRune == 0 {
 						curEdge.suffixIndex[index] = -2 // mark as -2 to indicate a new terminal
 						remainCount--
-						continue
+					} else {
+						// current runes character present after active point,
+						// suffix won't be added explicitly in current phase
+						// increment active length and exit current phase
+						activeLength++
+						break
 					}
-					// current runes character present after active point,
-					// suffix won't be added explicitly in current phase
-					// increment active length and exit current phase
-					activeLength++
-					break
 				} else {
 					// mistake 2
 					// split current edge, the trick here is:
@@ -129,6 +139,7 @@ func addStrToTree(tree *SuffixTree, texts []string, index int) {
 					newNode := NewNode(num)
 					newNode.start = curEdge.start
 					newNode.end = new(int)
+					newNode.textindex = curEdge.textindex
 					*newNode.end = activePointIndex
 					curEdge.start = activePointIndex + 1 // modify start and end
 					// newNode become activeNode's child
@@ -140,7 +151,8 @@ func addStrToTree(tree *SuffixTree, texts []string, index int) {
 					// create new leaf for current runes character
 					newLeaf := NewNode(num)
 					newLeaf.start = i
-					newLeaf.end = end         // leaf end equals to global end
+					newLeaf.end = end // leaf end equals to global end
+					newLeaf.textindex = index
 					newNode.addChild(newLeaf) // leaf added to new node
 
 					// if previous internal node not null, link suffix link
@@ -170,8 +182,7 @@ func addStrToTree(tree *SuffixTree, texts []string, index int) {
 			}
 		}
 	}
-
-	dfsToSetSuffixIndex(root, index, end)
+	dfsToSetSuffixIndex(tree, index, end)
 }
 
 func NewNode(n int) *SuffixTreeNode {
@@ -183,9 +194,10 @@ func NewNode(n int) *SuffixTreeNode {
 	return node
 }
 
-func (node *SuffixTreeNode) getChildForRune(runes []rune, r rune) *SuffixTreeNode {
+func (node *SuffixTreeNode) getChildForRune(runes [][]rune, r rune) *SuffixTreeNode {
 	for n := node.children; n != nil; n = n.sibling {
-		if runes[n.start] == r {
+		ti := n.textindex
+		if runes[ti][n.start] == r {
 			return n
 		}
 	}
@@ -218,25 +230,26 @@ func (node *SuffixTreeNode) addChild(child *SuffixTreeNode) {
 	}
 }
 
-// todo finish update suffix index
 // use curend to specify whether a leaf is added for current str
-func dfsToSetSuffixIndex(root *SuffixTreeNode, index int, curend *int) {
+func dfsToSetSuffixIndex(tree *SuffixTree, index int, end *int) {
 	curLen := 0
-	stack := list.New()
+	root := tree.Root
+	tree.stack.reinit()
 	cur := root.children // root do not represent start or end, so start with first child
 	for cur != nil {
 		if cur.children != nil {
 			curLen += *cur.end - cur.start + 1
-			stack.PushBack(cur)
+			tree.stack.push(cur)
 			cur = cur.children
 		} else {
-			// it should be as follows, but here we merge it
-			// curLen += *cur.end - cur.start + 1         // add cur len
-			// cur.suffixIndex = *cur.end - curLen + 1    // calculate suffix index = end-len+1
-			// curLen -= *cur.end - cur.start + 1         // sub cur len
-			//cur.suffixIndex = cur.start - curLen
-			for stack.Len() > 0 && cur.sibling == nil {
-				cur = stack.Remove(stack.Back()).(*SuffixTreeNode)
+			// check if this suffix is added for current string
+			curLen += *cur.end - cur.start
+			if cur.end == end || cur.suffixIndex[index] == -2 {
+				cur.suffixIndex[index] = len(tree.Runes[index]) - 1 - curLen
+			}
+			curLen -= *cur.end - cur.start
+			for tree.stack.len() > 0 && cur.sibling == nil {
+				cur = tree.stack.pop()
 				curLen -= *cur.end - cur.start + 1
 			}
 			cur = cur.sibling
@@ -268,4 +281,35 @@ func longestPalindromicSubstring(str string) (start, length int) {
 
 func longestCommonSubstring(stra, strb string) (astart, bstart, length int) {
 	return 0, 0, 0
+}
+
+type stack struct {
+	top   int
+	slice []*SuffixTreeNode
+}
+
+func newStack() *stack {
+	return &stack{-1, make([]*SuffixTreeNode, 64)}
+}
+
+func (s *stack) push(node *SuffixTreeNode) {
+	s.top++
+	s.slice[s.top] = node
+}
+
+func (s *stack) pop() *SuffixTreeNode {
+	s.top--
+	return s.slice[s.top+1]
+}
+
+func (s *stack) peek() *SuffixTreeNode {
+	return s.slice[s.top]
+}
+
+func (s *stack) len() int {
+	return s.top + 1
+}
+
+func (s *stack) reinit() {
+	s.top = -1
 }

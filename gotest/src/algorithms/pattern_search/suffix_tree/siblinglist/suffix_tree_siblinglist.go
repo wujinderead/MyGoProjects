@@ -356,7 +356,7 @@ func (tree *SuffixTree) longestRepeatedSubstringTwoStart() (astart, bstart, maxb
 			cur = cur.sibling
 		}
 	}
-	// maxlen internal node must contain 2 and only 2 leaf nodes
+	// maxlen internal node must contain at least 2 leaves and only leaves
 	if maxnode != nil {
 		n := maxnode.children
 		maxbytelen = tree.indices[n.suffixIndex+maxrunelen] - tree.indices[n.suffixIndex]
