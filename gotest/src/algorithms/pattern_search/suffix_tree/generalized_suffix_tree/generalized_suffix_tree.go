@@ -280,7 +280,60 @@ func longestPalindromicSubstring(str string) (start, length int) {
 }
 
 func longestCommonSubstring(stra, strb string) (astart, bstart, length int) {
-	return 0, 0, 0
+	tree := NewGeneralizedSuffixTree([]string{stra, strb})
+
+	maxlen := new(int)
+	maxind := make([]int, len(tree.Texts))
+	for ch := tree.Root.children; ch != nil; ch = ch.sibling {
+		findLongestCommon(ch, 0, maxlen, maxind)
+	}
+	// todo from rune to bytes
+	return maxind[0], maxind[1], *maxlen
+}
+
+func findLongestCommon(node *SuffixTreeNode, prev int, maxlen *int, maxind []int) []int {
+	// leaf
+	if node.children == nil {
+		return node.suffixIndex
+	}
+	// internal node
+	si := make([]int, len(node.suffixIndex))
+	setAllNeg1(si)
+	curlen := *node.end - node.start + 1 + prev
+	for ch := node.children; ch != nil; ch = ch.sibling {
+		chsi := findLongestCommon(ch, curlen, maxlen, maxind)
+		updateSi(si, chsi)
+	}
+	if allNonNeg(si) {
+		if curlen > *maxlen {
+			*maxlen = curlen
+			copy(maxind, si)
+		}
+	}
+	return si
+}
+
+func setAllNeg1(arr []int) {
+	for i := range arr {
+		arr[i] = -1
+	}
+}
+
+func updateSi(arr, cur []int) {
+	for i := range arr {
+		if cur[i] >= 0 {
+			arr[i] = cur[i]
+		}
+	}
+}
+
+func allNonNeg(arr []int) bool {
+	for i := range arr {
+		if arr[i] < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 type stack struct {

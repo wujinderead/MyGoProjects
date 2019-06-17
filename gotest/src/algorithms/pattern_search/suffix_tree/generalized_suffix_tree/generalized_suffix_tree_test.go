@@ -100,7 +100,7 @@ func TestLongestCommon(t *testing.T) {
 				a, b, exp, a[as:as+length])
 		}
 		fmt.Println(as, bs, length)
-		fmt.Println(a, b, exp)
+		fmt.Println(a, b, a[as:as+length])
 		fmt.Println()
 	}
 }
