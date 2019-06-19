@@ -1,8 +1,8 @@
 package ugly_number
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestUglies235(t *testing.T) {
