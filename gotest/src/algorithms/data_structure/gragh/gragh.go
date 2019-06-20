@@ -38,9 +38,9 @@ func (g *graph) print() {
 	}
 }
 
-func topologicalOne(g *graph) []int {
-	top := make([]int, g.n, g.n)
-	inDegree := make([]int, g.n, g.n)
+func topologicalQueue(g *graph) []int {
+	top := make([]int, g.n)
+	inDegree := make([]int, g.n)
 	for i := range g.adjacency {
 		for nb := g.adjacency[i]; nb != nil; nb = nb.next {
 			inDegree[nb.id]++
@@ -68,4 +68,36 @@ func topologicalOne(g *graph) []int {
 		return nil
 	}
 	return top
+}
+
+func topologicalDfs(g *graph) []int {
+	top := make([]int, g.n)
+	visited := make([]bool, g.n)
+	tindex := g.n - 1
+	for i := range g.adjacency {
+		if !visited[i] {
+			topologicalDfsHelper(g, i, &tindex, top, visited)
+		}
+	}
+	return top
+}
+
+func topologicalDfsHelper(g *graph, i int, tindex *int, top []int, visited []bool) {
+	visited[i] = true
+	for nb := g.adjacency[i]; nb != nil; nb = nb.next {
+		if !visited[nb.id] {
+			fmt.Println(i, nb.id)
+			topologicalDfsHelper(g, nb.id, tindex, top, visited)
+		}
+	}
+	top[*tindex] = i // push the deepest vertex to stack bottom
+	*tindex--
+}
+
+// todo topological all
+// utilize backtracking
+func topologicalAll(g *graph) [][]int {
+	tops := make([][]int, 0)
+	//top := make([]int, g.n)
+	return tops
 }
