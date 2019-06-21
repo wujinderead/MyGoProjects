@@ -83,4 +83,28 @@ func TestTypes(t *testing.T) {
 		fmt.Println("pointer elem ptrToThis :", pointert.elem.ptrToThis) // *airport addr
 		fmt.Println()
 	}
+
+	{
+		var funcer interface{} = func(a int, b string) (rune, uint64) {
+			return 'r', 123456
+		}
+		efacer := (*eface)(unsafe.Pointer(&funcer))
+		funcert := (*functype)(unsafe.Pointer(efacer._type))                   // extended to from *_type to *ptrtype
+		fmt.Println("reflect type      :", reflect.TypeOf(funcer).String())    // *airport
+		fmt.Println("funcer size      :", funcert.typ.size, efacer._type.size) // 8 for pointer
+		fmt.Println("funcer hash      :", funcert.typ.hash)
+		fmt.Println("funcer kind      :", funcert.typ.kind, reflect.Kind(funcert.typ.kind))
+		fmt.Println("funcer str       :", funcert.typ.str)
+		fmt.Println("funcer ptrToThis :", funcert.typ.ptrToThis)
+
+		fmt.Println("funcer incount   :", funcert.inCount)
+		fmt.Println("funcer outcount  :", funcert.outCount)
+		fmt.Println("funcer dotdotdot :", funcert.dotdotdot())
+		for i := range funcert.in() {
+			fmt.Println("in", i, ":", reflect.Kind(funcert.in()[i].kind))
+		}
+		for i := range funcert.out() {
+			fmt.Println("out", i, ":", reflect.Kind(funcert.out()[i].kind))
+		}
+	}
 }
