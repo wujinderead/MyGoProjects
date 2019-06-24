@@ -6,7 +6,7 @@ import (
 )
 
 func TestMstPrimMatrix(t *testing.T) {
-	g := newWeightedUndirectedMatrix(9, [][]int{
+	g := newUndirectedMatrix(9, [][]int{
 		{0, 1, 4},
 		{0, 7, 8},
 		{1, 7, 11},
@@ -33,7 +33,7 @@ func TestMstPrimMatrix(t *testing.T) {
 }
 
 func TestMstPrimAdjacent(t *testing.T) {
-	g := newWeightedUndirectedGraph(9, [][]int{
+	g := newUndirectedGraph(9, [][]int{
 		{0, 1, 4},
 		{0, 7, 8},
 		{1, 7, 11},
@@ -57,7 +57,7 @@ func TestMstPrimAdjacent(t *testing.T) {
 }
 
 func TestMstKruskalAdjacent(t *testing.T) {
-	g := newWeightedUndirectedGraph(9, [][]int{
+	g := newUndirectedGraph(9, [][]int{
 		{0, 1, 4},
 		{0, 7, 8},
 		{1, 7, 11},

@@ -30,7 +30,7 @@ func TestGraphTopologicalAll(t *testing.T) {
 }
 
 func TestLongestPathDag(t *testing.T) {
-	g := newWeightedDirectedGraph(6, [][]int{
+	g := newDirectedGraph(6, [][]int{
 		{0, 1, 5},
 		{0, 2, 3},
 		{1, 3, 6},

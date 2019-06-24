@@ -2,11 +2,8 @@ package gragh
 
 import (
 	"fmt"
-	"math"
 	"sort"
 )
-
-const INF = math.MaxInt8
 
 // O(V²)
 func mstPrimMatrix(g *matrix) []int {

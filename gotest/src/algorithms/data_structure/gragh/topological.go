@@ -3,10 +3,7 @@ package gragh
 import (
 	"container/list"
 	"fmt"
-	"math"
 )
-
-const NINF = math.MinInt64
 
 func topologicalQueue(g *graph) []int {
 	top := make([]int, g.n)
