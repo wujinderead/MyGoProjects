@@ -73,3 +73,34 @@ func dijkstraAdjacent(g *graph, src int) (mindist []int, sptSet []int) {
 	}
 	return
 }
+
+func floydWarshall(g *matrix) [][]int {
+	// this solution has not provide path information
+	// however it can be achieved by using another 2D array to store the predecessor.
+	dist := make([][]int, g.n)
+	for i := range dist {
+		dist[i] = make([]int, g.n)
+		for j := range dist[i] {
+			// initialize the distance matrix
+			if i == j {
+				dist[i][j] = 0 // dist[i][i]=0
+			} else if g.get(i, j) == 0 {
+				dist[i][j] = INF // dist[i][j]=INF if i, j is not directed linked
+			} else {
+				dist[i][j] = g.get(i, j) // real distance
+			}
+		}
+	}
+	// floyd-warshall algorithm
+	for k := 0; k < g.n; k++ { // k represent the intermediate vertex, outermost loop
+		for i := 0; i < g.n; i++ {
+			for j := 0; j < g.n; j++ {
+				// dist[i][k] and dist[k][j] should not be INF to avoid overflow
+				if dist[i][k] != INF && dist[k][j] != INF && dist[i][k]+dist[k][j] < dist[i][j] {
+					dist[i][j] = dist[i][k] + dist[k][j] // this also works from directed graph
+				}
+			}
+		}
+	}
+	return dist
+}
