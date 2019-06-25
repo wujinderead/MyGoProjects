@@ -4,7 +4,7 @@ import "container/list"
 
 type BiTreeNode struct {
 	left, right *BiTreeNode
-	key          int
+	key         int
 }
 
 type BiTree struct {
@@ -15,13 +15,13 @@ func NewBiTree() *BiTree {
 	return &BiTree{}
 }
 
-func (t *BiTree) TraverseBFS(todo func (tnode *BiTreeNode)) {
+func (t *BiTree) TraverseBFS(todo func(tnode *BiTreeNode)) {
 	if t.Root == nil {
 		return
 	}
 	queue := list.New()
 	queue.PushBack(t.Root)
-	for queue.Len()>0 {
+	for queue.Len() > 0 {
 		cur := queue.Remove(queue.Front()).(*BiTreeNode)
 		todo(cur)
 		if cur.left != nil {
@@ -34,19 +34,19 @@ func (t *BiTree) TraverseBFS(todo func (tnode *BiTreeNode)) {
 
 }
 
-func (t *BiTree) TraversePreOrder(todo func (tnode *BiTreeNode)) {
+func (t *BiTree) TraversePreOrder(todo func(tnode *BiTreeNode)) {
 	preOrder(t.Root, todo)
 }
 
-func (t *BiTree) TraverseInOrder(todo func (tnode *BiTreeNode)) {
+func (t *BiTree) TraverseInOrder(todo func(tnode *BiTreeNode)) {
 	inOrder(t.Root, todo)
 }
 
-func (t *BiTree) TraversePostOrder(todo func (tnode *BiTreeNode)) {
+func (t *BiTree) TraversePostOrder(todo func(tnode *BiTreeNode)) {
 	postOrder(t.Root, todo)
 }
 
-func preOrder(tnode * BiTreeNode, todo func (tnode *BiTreeNode)) {
+func preOrder(tnode *BiTreeNode, todo func(tnode *BiTreeNode)) {
 	if tnode != nil {
 		todo(tnode)
 		preOrder(tnode.left, todo)
@@ -54,7 +54,7 @@ func preOrder(tnode * BiTreeNode, todo func (tnode *BiTreeNode)) {
 	}
 }
 
-func inOrder(tnode * BiTreeNode, todo func (tnode *BiTreeNode)) {
+func inOrder(tnode *BiTreeNode, todo func(tnode *BiTreeNode)) {
 	if tnode != nil {
 		inOrder(tnode.left, todo)
 		todo(tnode)
@@ -62,7 +62,7 @@ func inOrder(tnode * BiTreeNode, todo func (tnode *BiTreeNode)) {
 	}
 }
 
-func postOrder(tnode * BiTreeNode, todo func (tnode *BiTreeNode)) {
+func postOrder(tnode *BiTreeNode, todo func(tnode *BiTreeNode)) {
 	if tnode != nil {
 		postOrder(tnode.left, todo)
 		postOrder(tnode.right, todo)
@@ -70,7 +70,7 @@ func postOrder(tnode * BiTreeNode, todo func (tnode *BiTreeNode)) {
 	}
 }
 
-func (t *BiTree) TraversePreOrderIterative(todo func (tnode *BiTreeNode)) {
+func (t *BiTree) TraversePreOrderIterative(todo func(tnode *BiTreeNode)) {
 	// use stack to store parent nodes
 	cur := t.Root
 	if cur == nil {
@@ -78,11 +78,11 @@ func (t *BiTree) TraversePreOrderIterative(todo func (tnode *BiTreeNode)) {
 	}
 	stack := list.New()
 	stack.PushBack(cur)
-	for stack.Len()>0 {
+	for stack.Len() > 0 {
 		cur = stack.Remove(stack.Back()).(*BiTreeNode)
 		todo(cur)
 		if cur.right != nil {
-			stack.PushBack(cur.right)   // push right first, so we can pop left first
+			stack.PushBack(cur.right) // push right first, so we can pop left first
 		}
 		if cur.left != nil {
 			stack.PushBack(cur.left)
@@ -90,10 +90,10 @@ func (t *BiTree) TraversePreOrderIterative(todo func (tnode *BiTreeNode)) {
 	}
 }
 
-func (t *BiTree) TraverseInOrderIterative(todo func (tnode *BiTreeNode)) {
+func (t *BiTree) TraverseInOrderIterative(todo func(tnode *BiTreeNode)) {
 	cur := t.Root
 	stack := list.New()
-	for stack.Len()>0 || cur != nil {
+	for stack.Len() > 0 || cur != nil {
 		if cur != nil {
 			stack.PushBack(cur)
 			cur = cur.left
@@ -105,11 +105,11 @@ func (t *BiTree) TraverseInOrderIterative(todo func (tnode *BiTreeNode)) {
 	}
 }
 
-func (t *BiTree) TraversePostOrderIterative(todo func (tnode *BiTreeNode)) {
+func (t *BiTree) TraversePostOrderIterative(todo func(tnode *BiTreeNode)) {
 	cur := t.Root
 	stack := list.New()
 	var lastVisited *BiTreeNode = nil
-	for stack.Len()>0 || cur != nil {
+	for stack.Len() > 0 || cur != nil {
 		if cur != nil {
 			stack.PushBack(cur)
 			cur = cur.left
@@ -117,8 +117,8 @@ func (t *BiTree) TraversePostOrderIterative(todo func (tnode *BiTreeNode)) {
 			peek := stack.Back().Value.(*BiTreeNode)
 			if peek.right != nil && lastVisited != peek.right {
 				cur = peek.right
-			} else {        // peek.right=nil, we can certainly visit peek
-				todo(peek)  // peek.right=lastVisit, we have visit peek.right, we can visit peek
+			} else { // peek.right=nil, we can certainly visit peek
+				todo(peek) // peek.right=lastVisit, we have visit peek.right, we can visit peek
 				lastVisited = stack.Remove(stack.Back()).(*BiTreeNode)
 			}
 		}

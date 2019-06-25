@@ -21,7 +21,7 @@ func main() {
 	//testSingle(test1)
 	testSingle(test2)
 	heap.HeapAscendSort([]int{6, 1, 15, 2, 8, 18, 0, 13, 16, 7, 11,
-	5, 4, 12, 19, 17, 14, 9, 10, 3})
+		5, 4, 12, 19, 17, 14, 9, 10, 3})
 }
 
 func testBatch(test []int) {

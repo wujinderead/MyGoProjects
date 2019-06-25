@@ -6,13 +6,13 @@ import (
 )
 
 func makeTree1() *BiTree {
-	n1 := &BiTreeNode{nil, nil ,1}
-	n3 := &BiTreeNode{nil, nil ,3}
-	n2 := &BiTreeNode{n1, n3 ,2}
-	n5 := &BiTreeNode{nil, nil ,5}
-	n7 := &BiTreeNode{nil, nil ,7}
-	n6 := &BiTreeNode{n5, n7 ,6}
-	n4 := &BiTreeNode{n2, n6 ,4}
+	n1 := &BiTreeNode{nil, nil, 1}
+	n3 := &BiTreeNode{nil, nil, 3}
+	n2 := &BiTreeNode{n1, n3, 2}
+	n5 := &BiTreeNode{nil, nil, 5}
+	n7 := &BiTreeNode{nil, nil, 7}
+	n6 := &BiTreeNode{n5, n7, 6}
+	n4 := &BiTreeNode{n2, n6, 4}
 	return &BiTree{n4}
 }
 
