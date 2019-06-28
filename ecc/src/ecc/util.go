@@ -1,19 +1,21 @@
 package ecc
 
 import (
+	"encoding/asn1"
+	"encoding/pem"
+	"fmt"
 	"math/big"
 	"os/exec"
-	"fmt"
-	"encoding/pem"
-	"encoding/asn1"
 )
 
 var (
-	Zero     = new(big.Int).SetInt64(0)
+	ZERO     = new(big.Int).SetInt64(0)
 	ONE      = new(big.Int).SetInt64(1)
 	TWO      = new(big.Int).SetInt64(2)
+	THREE    = new(big.Int).SetInt64(3)
+	FOUR     = new(big.Int).SetInt64(4)
 	NEG_ONE  = new(big.Int).SetInt64(-1)
-	Infinity = &EcPoint{Zero, Zero}
+	Infinity = &EcPoint{ZERO, ZERO}
 )
 
 // a/b mod p
@@ -59,7 +61,7 @@ func getOpensslEcPrivateKey(curve string) (error, []byte, *big.Int, *big.Int) {
 		fmt.Println("unmashal error: ", err.Error())
 		return err, nil, nil, nil
 	}
-	px := new(big.Int).SetBytes(priv.PublicKey.Bytes[1:1+len(priv.PrivateKey)])
+	px := new(big.Int).SetBytes(priv.PublicKey.Bytes[1 : 1+len(priv.PrivateKey)])
 	py := new(big.Int).SetBytes(priv.PublicKey.Bytes[1+len(priv.PrivateKey):])
 	return nil, priv.PrivateKey, px, py
 }

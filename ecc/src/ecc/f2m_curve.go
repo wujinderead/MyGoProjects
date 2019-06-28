@@ -10,7 +10,7 @@ type F2mCurve struct {
 }
 
 func (curve *F2mCurve) gadd(a, b *big.Int) *big.Int {
-	return new(big.Int).Xor(a, b)  // since we're in GF(2^m), addition is an XOR
+	return new(big.Int).Xor(a, b) // since we're in GF(2^m), addition is an XOR
 }
 
 func (curve *F2mCurve) gaddSelf(a, b *big.Int) {
@@ -54,24 +54,24 @@ func (curve *F2mCurve) Add(p, q *EcPoint) *EcPoint {
 		return p.Copy()
 	}
 	if p.Equals(q) { // double
-		if (p.X).Cmp(Zero) == 0 { // (0, b) + (0, b) = Infinity
+		if (p.X).Cmp(ZERO) == 0 { // (0, b) + (0, b) = Infinity
 			return NewPoint()
 		} else {
 			// x3 = (x1+y1/x1)²+(x1+y1/x1)+A
 			// y3 = (x1+y1/x1)³+(x1+A+1)*(x1+y1/x1)+A+y1
 			m := curve.gmulinv(p.X)
 			m = curve.gmul(m, p.Y)
-			curve.gaddSelf(m, p.X)           // x1+y1/x1
-			x3 := curve.gmul(m, m)           // (x1+y1/x1)²
-			y3 := curve.gmul(m, x3)          // (x1+y1/x1)³
+			curve.gaddSelf(m, p.X)  // x1+y1/x1
+			x3 := curve.gmul(m, m)  // (x1+y1/x1)²
+			y3 := curve.gmul(m, x3) // (x1+y1/x1)³
 			curve.gaddSelf(x3, m)
-			curve.gaddSelf(x3, curve.A)      // (x1+y1/x1)²+(x1+y1/x1)+A
+			curve.gaddSelf(x3, curve.A) // (x1+y1/x1)²+(x1+y1/x1)+A
 			n := curve.gadd(p.X, curve.A)
-			curve.gaddSelf(n, ONE)           // (x1+A+1)
-			n = curve.gmul(n, m)             // (x1+A+1)*(x1+y1/x1)
+			curve.gaddSelf(n, ONE) // (x1+A+1)
+			n = curve.gmul(n, m)   // (x1+A+1)*(x1+y1/x1)
 			curve.gaddSelf(y3, n)
 			curve.gaddSelf(y3, curve.A)
-			curve.gaddSelf(y3, p.Y)          // (x1+y1/x1)³+(x1+A+1)*(x1+y1/x1)+A+y1
+			curve.gaddSelf(y3, p.Y) // (x1+y1/x1)³+(x1+A+1)*(x1+y1/x1)+A+y1
 			return &EcPoint{x3, y3}
 		}
 	} else { // add
@@ -83,21 +83,21 @@ func (curve *F2mCurve) Add(p, q *EcPoint) *EcPoint {
 			m := curve.gadd(p.X, q.X)
 			n := curve.gadd(p.Y, q.Y)
 			m = curve.gmulinv(m)
-			m = curve.gmul(m, n)             // (y1+y2)/(x1+x2)
-			x3 := curve.gmul(m, m)           // ((y1+y2)/(x1+x2))²
-			y3 := curve.gmul(m, x3)          // ((y1+y2)/(x1+x2))³
+			m = curve.gmul(m, n)    // (y1+y2)/(x1+x2)
+			x3 := curve.gmul(m, m)  // ((y1+y2)/(x1+x2))²
+			y3 := curve.gmul(m, x3) // ((y1+y2)/(x1+x2))³
 			curve.gaddSelf(x3, m)
 			curve.gaddSelf(x3, p.X)
 			curve.gaddSelf(x3, q.X)
-			curve.gaddSelf(x3, curve.A)      // ((y1+y2)/(x1+x2))²+((y1+y2)/(x1+x2))+x1+x2+A
+			curve.gaddSelf(x3, curve.A) // ((y1+y2)/(x1+x2))²+((y1+y2)/(x1+x2))+x1+x2+A
 			n = curve.gadd(q.X, curve.A)
-			curve.gaddSelf(n, ONE)           // (x2+A+1)
-			n = curve.gmul(n, m)             // (x2+A+1)*((y1+y2)/(x1+x2))
+			curve.gaddSelf(n, ONE) // (x2+A+1)
+			n = curve.gmul(n, m)   // (x2+A+1)*((y1+y2)/(x1+x2))
 			curve.gaddSelf(y3, n)
 			curve.gaddSelf(y3, p.X)
 			curve.gaddSelf(y3, q.X)
 			curve.gaddSelf(y3, curve.A)
-			curve.gaddSelf(y3, p.Y)          // ((y1+y2)/(x1+x2))³+(x2+A+1)*((y1+y2)/(x1+x2))+x1+x2+A+y1
+			curve.gaddSelf(y3, p.Y) // ((y1+y2)/(x1+x2))³+(x2+A+1)*((y1+y2)/(x1+x2))+x1+x2+A+y1
 			return &EcPoint{x3, y3}
 		}
 	}
@@ -127,11 +127,11 @@ func (curve *F2mCurve) ScalaMultBase(k []byte) *EcPoint {
 func (curve *F2mCurve) gmulReference(x, y *big.Int) *big.Int {
 	product := new(big.Int).SetInt64(0)
 	a := new(big.Int).Set(x)
-	size := curve.P.BitLen()-1
-	for i:=0; i<size; i++ {
+	size := curve.P.BitLen() - 1
+	for i := 0; i < size; i++ {
 		// if b least bit is 1, then add the corresponding a to p
 		// final product is sum of all a's corresponding to odd b's
-		if y.Bit(i)==1 {
+		if y.Bit(i) == 1 {
 			product.Xor(product, a)
 		}
 		a.Lsh(a, 1)

@@ -9,7 +9,7 @@ import (
 )
 
 func TestConst(t *testing.T) {
-	if Zero.Cmp(new(big.Int).SetInt64(0)) == 0 {
+	if ZERO.Cmp(new(big.Int).SetInt64(0)) == 0 {
 		t.Log("good.")
 	}
 	infi := &EcPoint{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)}

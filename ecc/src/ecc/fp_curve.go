@@ -1,8 +1,8 @@
 package ecc
 
 import (
-	"math/big"
 	"crypto/elliptic"
+	"math/big"
 )
 
 type FpCurve EcCurve
@@ -32,7 +32,7 @@ func (curve *FpCurve) Add(p, q *EcPoint) *EcPoint {
 	}
 	m, tmp := new(big.Int), new(big.Int)
 	if p.Equals(q) { // double
-		if (p.Y).Cmp(Zero) == 0 { // Yp=Yq=0, i.e. (a, 0) + (a, 0) = Infinity
+		if (p.Y).Cmp(ZERO) == 0 { // Yp=Yq=0, i.e. (a, 0) + (a, 0) = Infinity
 			return NewPoint()
 		} else {
 			// m = (3Xp² + A) (2Yp)^-1 mod P
@@ -68,7 +68,7 @@ func (curve *FpCurve) Add(p, q *EcPoint) *EcPoint {
 	Yr.Add(Yr, p.Y)
 	Yr.Mod(Yr, curve.P)
 	// return (Xr, -Yr). if Yr = 0, -Yr = 0; else -Yr = P - Yr
-	if Yr.Cmp(Zero) != 0 {
+	if Yr.Cmp(ZERO) != 0 {
 		Yr.Sub(curve.P, Yr)
 	}
 	return &EcPoint{Xr, Yr}
@@ -95,11 +95,11 @@ func (curve *FpCurve) ScalaMultBase(k []byte) *EcPoint {
 
 func (curve *FpCurve) ToGoNative() *elliptic.CurveParams {
 	return &elliptic.CurveParams{
-		P: curve.P,      // the order of the underlying field
-		N: curve.Order,  // the order of the base point
-		B: curve.B,      // the constant of the curve equation
-		Gx: curve.X, Gy: curve.Y,  // (x,y) of the base point
+		P:  curve.P,              // the order of the underlying field
+		N:  curve.Order,          // the order of the base point
+		B:  curve.B,              // the constant of the curve equation
+		Gx: curve.X, Gy: curve.Y, // (x,y) of the base point
 		BitSize: curve.P.BitLen(), // the size of the underlying field
-		Name: "",         // the canonical name of the curve
+		Name:    "",               // the canonical name of the curve
 	}
 }

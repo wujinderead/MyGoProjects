@@ -182,7 +182,7 @@ func (curve *MtCurve) Add(p, q *EcPoint) *EcPoint {
 	}
 	m, tmp := new(big.Int), new(big.Int)
 	if p.Equals(q) { // double
-		if (p.Y).Cmp(Zero) == 0 { // Yp=Yq=0, i.e. (a, 0) + (a, 0) = Infinity
+		if (p.Y).Cmp(ZERO) == 0 { // Yp=Yq=0, i.e. (a, 0) + (a, 0) = Infinity
 			return NewPoint()
 		} else {
 			// m = (3Xp² + 2AXp + 1) (2Yp)^-1 mod P
@@ -221,7 +221,7 @@ func (curve *MtCurve) Add(p, q *EcPoint) *EcPoint {
 	Yr.Add(Yr, p.Y)
 	Yr.Mod(Yr, curve.P)
 	// return (Xr, -Yr). if Yr = 0, -Yr = 0; else -Yr = P - Yr
-	if Yr.Cmp(Zero) != 0 {
+	if Yr.Cmp(ZERO) != 0 {
 		Yr.Sub(curve.P, Yr)
 	}
 	return &EcPoint{Xr, Yr}
@@ -263,8 +263,8 @@ func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *EcPoint {
 	x, y, z := p.X, p.Y, zForAffine(p.X, p.Y)
 	x0, z0 := new(big.Int), new(big.Int)
 	x1, z1 := new(big.Int).Set(p.X), zForAffine(p.X, p.Y)
-	for _,b := range k {
-		for i:=0; i<8; i++ {
+	for _, b := range k {
+		for i := 0; i < 8; i++ {
 			if b&0x80 == 0x80 {
 				x0, z0 = curve.diffAddProjective(x, z, x0, z0, x1, z1) // R0 = R0 ⊕ R1
 				x1, z1 = curve.doubleProjective(x1, z1)                // R1 = 2R1

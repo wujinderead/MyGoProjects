@@ -99,7 +99,7 @@ var initEc sync.Once
 var EcCurveSpecs = make(map[string]*EcCurveSpec)
 var FpCurveNames = make([]string, 0)
 var F2mCurveNames = make([]string, 0)
-var Aneg3CurveNames = make([]string, 0)  // Fp curve with a=-3
+var Aneg3CurveNames = make([]string, 0)   // Fp curve with a=-3
 var KoblitzCurveNames = make([]string, 0) // Fp curve with a=0
 var TrivialCurveNames = make([]string, 0) // Fp curve with no special parameters
 
@@ -294,7 +294,7 @@ func initEcCurves() {
 				Aneg3CurveNames = append(Aneg3CurveNames, name)
 				continue
 			}
-			if curve.Curve.A.Cmp(Zero) == 0 {
+			if curve.Curve.A.Cmp(ZERO) == 0 {
 				KoblitzCurveNames = append(KoblitzCurveNames, name)
 				continue
 			}
@@ -304,7 +304,7 @@ func initEcCurves() {
 		if curve.Curve.head.fieldType == NID_X9_62_characteristic_two_field {
 			F2mCurveNames = append(F2mCurveNames, name)
 		}
- 	}
+	}
 }
 
 func GetEcCurveSpec(name string) (*EcCurveSpec, error) {

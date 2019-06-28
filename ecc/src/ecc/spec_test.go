@@ -109,7 +109,7 @@ func TestParams_Prime(t *testing.T) {
 		curve := spec.Curve
 		three := new(big.Int).SetInt64(3)
 		featured := false
-		if curve.A.Cmp(Zero) == 0 {
+		if curve.A.Cmp(ZERO) == 0 {
 			fmt.Print("a=0, ")
 			featured = true
 		}
@@ -190,7 +190,7 @@ func TestParams_BinaryFieldP(t *testing.T) {
 
 func testPrimeBits(p *big.Int) bool {
 	count := 0
-	for i:=0; i<p.BitLen(); i++ {
+	for i := 0; i < p.BitLen(); i++ {
 		if p.Bit(i) == 1 {
 			count++
 		}
