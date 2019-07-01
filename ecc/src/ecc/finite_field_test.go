@@ -2,50 +2,18 @@ package ecc
 
 import (
 	"fmt"
-	"math/big"
 	"strconv"
 	"testing"
 )
 
-var upper = []rune{'⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'}
-
-func TestBls12Parameters(t *testing.T) {
-	// y² = x³ + 4 over Fq
-	q, _ := new(big.Int).SetString("1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", 16)
-	r, _ := new(big.Int).SetString("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16)
-	// order of the elliptic curve is retrieved from SageMath: E=EllipticCurve(GF(q),[0,4]); hex(E.order())
-	n, _ := new(big.Int).SetString("1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb15400008c0000000000aaab", 16)
-	g1x, _ := new(big.Int).SetString("17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb", 16)
-	g1y, _ := new(big.Int).SetString("8b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1", 16)
-	fmt.Println("q =", q.BitLen(), new(big.Int).Mod(q, FOUR), q.String())
-	fmt.Println("r =", r.BitLen(), new(big.Int).Mod(r, FOUR), r.String())
-	fmt.Println("n =", n.BitLen(), n.String())
-	fq := FpCurve{head: nil, P: q, A: ZERO, B: FOUR, X: nil, Y: nil, Order: n}
-	ndivr := new(big.Int).Div(n, r)
-	nmodr := new(big.Int).Mod(n, r)
-	g1 := &EcPoint{g1x, g1y}
-	fmt.Println("g1 on curve:", fq.IsOnCurve(g1))
-	fmt.Println("n/r =", ndivr, "mod:", nmodr) // n mod r = 0, i.e., r | n
-	qq := new(big.Int).Set(q)
-	for i := 2; i <= 12; i++ {
-		qq.Mul(qq, q)
-		qq.Mod(qq, r)
-		fmt.Println("q"+toUpper(i), "mod r =", qq) // q^12 mod r = 1, i.e., r | (q¹² - 1)
-	}
-
-	fmt.Println("g1 * r =", fq.ScalaMult(g1, r.Bytes())) // G1*r=0, i.e., G1 is in subgroup of order r
-
-	x, _ := new(big.Int).SetString("-d201000000010000", 16) // generator
-	co1 := new(big.Int).Sub(x, ONE)
-	co1.Mul(co1, co1)
-	co1.Div(co1, THREE)
-	fmt.Println("cofator1:", co1, co1.Cmp(ndivr)) //  (x-1)²/3 = n/r, the cofactor of order r is (x-1)²/3
-}
+var (
+	upper = []rune{'⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'}
+)
 
 func testFiniteField(p, k int, irreducible []int) {
 	fmt.Println(string(upper))
 	// check if it is an irreducible polynomial
-	// a candidate polynomial is x^k + [0,p)x^(k-1) + [0,p)x^(k-2) + [0,p)x + [0,p)
+	// a candidate polynomial is x^k + [0,p)x^(k-1) + [0,p)x^(k-2) + ··· + [0,p)x + [0,p)
 	fmt.Println("irreducible polynomial:", polyStr(k, irreducible))
 
 	n, bases := getOrder(p, k)
@@ -74,7 +42,7 @@ func testFiniteField(p, k int, irreducible []int) {
 }
 
 func TestFiniteField(t *testing.T) {
-	testFiniteField(5, 3, []int{1, 2, 0, 1})    // GF(5³), irreducible polynomial x³ + 3x¹ + 3
+	testFiniteField(5, 3, []int{3, 3, 0, 1})    // GF(5³), irreducible polynomial x³ + 3x¹ + 3
 	testFiniteField(7, 4, []int{3, 4, 5, 0, 1}) // GF(7⁴), irreducible polynomial x⁴ + 5x² + 4x¹ + 3
 }
 
@@ -189,3 +157,26 @@ func (s set) add(i int) {
 func (s set) size() int {
 	return len(s)
 }
+
+/*
+g5=GF(5)
+g53=GF(5**3)
+print g53.polynomial()   # z³+3z+3
+
+e5=EllipticCurve(g5, [2, 4])  # Elliptic Curve defined by y²=x³+2x+4 over GF(5)
+print 'e5.order =', e5.order()   # 7
+e5.points()  # O, (0, 2), (0, 3), (2, 1), (2, 4), (4, 1), (4, 4)]
+
+e53=EllipticCurve(g53, [2, 4])  # Elliptic Curve defined by y²=x³+2x+4 over GF(5³)
+print 'e53.order =', e53.order()   # 112
+
+# get two points on curve e53, polynomial and vector form
+p1=e53.points()[12]      # (3z+1, 2z²+2z) = ((1, 3, 0), (0, 2, 2))
+p2=e53.points()[64]      # (2z²+2z+4, 4z²+3z+2) = ((4, 2, 2), (2, 3, 4))
+print 'p1x=', g53.vector_space()(p1[0]), 'p1y=', g53.vector_space()(p1[1])
+print 'p2x=', g53.vector_space()(p2[0]), 'p2y=', g53.vector_space()(p2[1])
+
+# test equality
+p1[1]**2 == p1[0]**3 + 2*p1[0] + 4   # (2z²+2z)² = (3z+1)³+2(3z+1)+4 mod z³+3z+3
+p2[1]**2 == p2[0]**3 + 2*p2[0] + 4
+*/
