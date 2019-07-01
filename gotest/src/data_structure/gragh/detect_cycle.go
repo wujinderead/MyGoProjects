@@ -4,7 +4,9 @@ import "fmt"
 
 // assume no parallel edge between two vertices
 func detectCycleUndirectedDfs(g *graph) bool {
-	// use stack to perform dfs
+	// use stack to perform dfs, it may add duplicated vertex in stack,
+	// we only walk down when it it firstly visited
+	// actually, use recursive method is more convenient
 	stack := make([]int, g.n)
 	parent := make([]int, g.n)
 	stackind := -1
@@ -15,20 +17,24 @@ func detectCycleUndirectedDfs(g *graph) bool {
 	for stackind >= 0 {
 		cur := stack[stackind]
 		curparent := parent[stackind] // pop stack
+		fmt.Println("cur:", cur, "parent:", curparent)
 		stackind--
-		visited[cur] = true
-		// traverse cur's edges
-		for nb := g.adjacency[cur]; nb != nil; nb = nb.next {
-			// if cur has a visited adjacent vertex and this vertex is not cur's parent
-			// then there must be a cycle
-			fmt.Println(cur, "->", nb.id, curparent, visited[nb.id])
-			if visited[nb.id] && nb.id != curparent {
-				return true
-			}
-			if !visited[nb.id] {
-				stackind++
-				stack[stackind] = nb.id // add cur's child to stack
-				parent[stackind] = cur
+		if !visited[cur] { // may pop duplicated vertex, just process it when firstly visited
+			visited[cur] = true
+			// traverse cur's edges
+			for nb := g.adjacency[cur]; nb != nil; nb = nb.next {
+				// if cur has a visited adjacent vertex and this vertex is not cur's parent
+				// then there must be a cycle
+				fmt.Println("nb:", nb.id, visited[nb.id])
+				if visited[nb.id] && nb.id != curparent {
+					fmt.Println("cycle")
+					//return true
+				}
+				if !visited[nb.id] {
+					stackind++
+					stack[stackind] = nb.id // add cur's child to stack
+					parent[stackind] = cur
+				}
 			}
 		}
 	}
