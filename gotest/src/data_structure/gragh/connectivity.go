@@ -45,7 +45,7 @@ func dfsUtil(cur int, g *graph, visited []bool, count *int) {
 
 // find all strongly connected components of a graph
 func findStronglyConnectedComponents(g *graph) [][]int {
-	// dfs the graph and push visted vertices in stack
+	// dfs the graph and push visited vertices in stack
 	index := new(int)
 	*index = -1
 	stack := make([]int, g.n)
@@ -100,5 +100,115 @@ func sccDfsUtil2(cur int, g *graph, visited []bool, scc *[]int) {
 		if !visited[nb.id] {
 			sccDfsUtil2(nb.id, g, visited, scc)
 		}
+	}
+}
+
+// for undirected graph, find all its articulation vertices
+func findArticulationPoints(g *graph) []int {
+	ap := make([]bool, g.n)
+	disc := make([]int, g.n) // the time when vertex is visited first time
+	low := make([]int, g.n)  // the topmost reachable ancestor of vertex
+	for i := 0; i < g.n; i++ {
+		if disc[i] == 0 { // disc[i]==0 means hasn't been visited
+			time := 1                              // set discovery time=1 for root
+			apUtil(i, -1, g, ap, low, disc, &time) // root's parent is -1
+		}
+	}
+	aps := make([]int, 0)
+	for i := 0; i < g.n; i++ {
+		if ap[i] {
+			aps = append(aps, i)
+		}
+	}
+	return aps
+}
+
+func apUtil(u, parent int, g *graph, ap []bool, low, disc []int, time *int) {
+	childCount := 0
+	// current vertex is u
+	disc[u] = *time
+	low[u] = *time // set disc[u] = low[u] when visited first time
+	*time++
+	for nb := g.adjacency[u]; nb != nil; nb = nb.next {
+		v := nb.id // current child vertex is v
+		childCount++
+		if disc[v] == 0 { // not visited
+			apUtil(v, u, g, ap, low, disc, time)
+			// because of recursion, the deepest vertex get processed first
+			low[u] = min(low[u], low[v]) // if u's child can go back to u's ancestor, u also can
+
+			// u is an articulation point in following cases:
+			// 1. u is root of DFS tree and has two or more children.
+			if parent == -1 && childCount > 1 {
+				ap[u] = true
+			}
+			// 2. u is not root, and u's child v can not go back to u's ancestor.
+			// low[v]<disc[u] means that v can go back to u's ancestor, low[v]>=disc[u] means can't.
+			if parent != -1 && low[v] >= disc[u] {
+				ap[u] = true
+			}
+		} else if v != parent {
+			low[u] = min(low[u], disc[v]) // if v can go back to u's ancestor, update low
+		}
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// find all strongly connected components of a graph use Tarjan’s algorithm
+func findAllSccTarjan(g *graph) [][]int {
+	sccs := make([][]int, 0)
+	disc := make([]int, g.n)  // the time when vertex is visited first time
+	low := make([]int, g.n)   // the topmost reachable ancestor of vertex
+	stack := make([]int, g.n) // stack to store searched vertices
+	index := -1
+	instack := make([]bool, g.n) // whether vertex is in stack
+	for i := 0; i < g.n; i++ {
+		if disc[i] == 0 { // disc[i]==0 means not visited
+			time := 1 // set discovery time=1 for root
+			sccTarjanUtil(i, g, instack, low, disc, stack, &time, &index, &sccs)
+		}
+	}
+	return sccs
+}
+
+func sccTarjanUtil(u int, g *graph, instack []bool, low, disc, stack []int, time, index *int, sccs *[][]int) {
+	disc[u] = *time
+	low[u] = *time // initialize disc and low equally
+	*time++
+	*index++
+	stack[*index] = u // push to stack
+	instack[u] = true
+	for nb := g.adjacency[u]; nb != nil; nb = nb.next {
+		v := nb.id
+		if disc[v] == 0 { // v not visited
+			sccTarjanUtil(v, g, instack, low, disc, stack, time, index, sccs)
+			low[u] = min(low[u], low[v])
+		} else if instack[v] { // v is visited and in stack, means u to v is a back edge, not cross edge
+			low[u] = min(low[u], disc[v])
+		}
+	}
+
+	// if after walk down and walk back, low is still equal to disc,
+	// then current vertex is a head of a strongly connected components
+	var w int
+	if low[u] == disc[u] {
+		scc := make([]int, 0)
+		for stack[*index] != u { // pop the stack until popped vertex is current vertex
+			w = stack[*index]
+			*index--
+			scc = append(scc, w)
+			instack[w] = false
+		}
+		w = stack[*index]
+		*index--
+		scc = append(scc, w)
+		instack[w] = false
+		*sccs = append(*sccs, scc)
 	}
 }
