@@ -1,6 +1,7 @@
 package set_problems
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -26,15 +27,29 @@ func TestSubsetSum(t *testing.T) {
 	cases := [][]interface{}{
 		{[]int{3, 34, 4, 12, 5, 2}, 9, true}, // 4, 5
 		{[]int{2, 6, 5, 3}, 10, true},        // 2, 5, 3
-		{[]int{2, 6, 5, 3}, 15, false},       // cant get 15
+		{[]int{2, 6, 5, 3}, 15, false},       // can't get 15
 	}
 	for i := range cases {
-		coins := cases[i][0].([]int)
+		set := cases[i][0].([]int)
 		target := cases[i][1].(int)
 		expect := cases[i][2].(bool)
-		re := subsetSum(coins, target)
+		re := subsetSum(set, target)
 		if re != expect {
 			t.Errorf("expect: %v, got: %v", expect, re)
 		}
+	}
+}
+
+func TestPerfectSum(t *testing.T) {
+	cases := [][]interface{}{
+		{[]int{1, 2, 3, 4, 5}, 10, [][]int{{1, 2, 3, 4}, {2, 3, 5}, {1, 4, 5}}},
+		{[]int{2, 3, 5, 6, 8, 10}, 10, [][]int{{5, 2, 3}, {2, 8}, {10}}},
+	}
+	for i := range cases {
+		set := cases[i][0].([]int)
+		target := cases[i][1].(int)
+		expect := cases[i][2].([][]int)
+		re := perfectSum(set, target)
+		fmt.Println(re, expect)
 	}
 }

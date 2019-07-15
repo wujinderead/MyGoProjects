@@ -81,5 +81,51 @@ func subsetSum(set []int, N int) bool {
 
 // given set S={s0, ..., Sm} and target N, return all subsets that with sum N.
 func perfectSum(set []int, N int) [][]int {
-	// todo
+	// first get the has 2d array
+	M := len(set)
+	has := make([][]bool, M)
+	for i := range has {
+		has[i] = make([]bool, N+1)
+	}
+	for i := 0; i < M; i++ {
+		has[i][0] = true
+	}
+	has[0][set[0]] = true
+	for i := 1; i < M; i++ {
+		for j := 1; j <= N; j++ {
+			v := has[i-1][j]
+			if j-set[i] >= 0 {
+				v = v || has[i-1][j-set[i]]
+			}
+			has[i][j] = v
+		}
+	}
+	// then use backtracking method to get all perfect sums
+	subs := make([][]int, 0)
+	sub := make([]int, M)
+	perfectHelper(&subs, sub, 0, set, has, M-1, N)
+	return subs
+}
+
+func perfectHelper(subs *[][]int, sub []int, index int, set []int, has [][]bool, i, j int) {
+	if i == 0 && j != 0 { // i==0, j!=0, has[0][j]==true, set[0] should be included in subset
+		sub[index] = set[i]
+		cursub := make([]int, index+1) // include set[i], index need increment
+		copy(cursub, sub[:index+1])
+		*subs = append(*subs, cursub)
+		return
+	}
+	if j == 0 { // j==0, find a subset
+		cursub := make([]int, index)
+		copy(cursub, sub[:index])
+		*subs = append(*subs, cursub)
+		return
+	}
+	if j-set[i] >= 0 && has[i-1][j-set[i]] { // include set[i], index need increment
+		sub[index] = set[i]
+		perfectHelper(subs, sub, index+1, set, has, i-1, j-set[i])
+	}
+	if has[i-1][j] { // not include set[i], no increment index
+		perfectHelper(subs, sub, index, set, has, i-1, j)
+	}
 }
