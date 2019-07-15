@@ -129,3 +129,14 @@ func perfectHelper(subs *[][]int, sub []int, index int, set []int, has [][]bool,
 		perfectHelper(subs, sub, index, set, has, i-1, j)
 	}
 }
+
+// get the minimum operations for matrix chain multiplication
+// for example, suppose A is 10 × 30, B is 30 × 5, C is 5 × 60 matrix. then,
+// (AB)C = (10×30×5) + (10×5×60) = 1500 + 3000 = 4500 operations
+// A(BC) = (30×5×60) + (10×30×60) = 9000 + 18000 = 27000 operations.
+func matrixChainMultiplication(mats []int) int {
+	// let min(i, j) be the minimum operation of matrix[i...j]
+	// then min(i, j) = Min(min(i,i+2)*min(i+2,j), min(i,i+3)*min(i+3,j), ...)
+	// todo
+	return 0
+}

@@ -26,3 +26,12 @@ func TestBoard3xnDomino2x1(t *testing.T) {
 		}
 	}
 }
+
+func TestPaintFence(t *testing.T) {
+	if paintFence(3, 2) != 6 {
+		t.Fail()
+	}
+	if paintFence(5, 4) != 864 {
+		t.Fail()
+	}
+}

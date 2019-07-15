@@ -12,8 +12,11 @@ func board2xnDomino2x1(n int) int {
 	return b
 }
 
-// 2×1 dominos to fill 3×n board
+// 2×1 dominoes to fill 3×n board
 /* can only be three situation:
+   A(n) means number of ways to fill 3×n board completely
+   B(n) means number of ways to fill 3×n board with upper left corner missing
+
                 XX         XX          Y
    A(n) = A(n-2)YY + B(n-1) Y + C(n-1) Y
                 ZZ          Y         XX
@@ -40,4 +43,31 @@ func board3xnDomino2x1(n int) int {
 	} else {
 		return 2 * b[n] // n is odd, can not fill full board
 	}
+}
+
+// https://www.geeksforgeeks.org/painting-fence-algorithm/
+// given a fence with n posts and k colors, find out the number of ways of painting
+// the fence such that at most 2 adjacent posts have the same color.
+// Since answer can be large return it modulo 10^9 + 7.
+func paintFence(n, k int) int {
+	// for position 0 and 1, we both have k choice,
+	// for position 0 and 1, we have k same two nodes, and k*(k-1) different two nodes,
+	// we store same[1]=k and diff[1]=k*(k-1)
+	// total[i] = same[i] + diff[i]
+	// same[i]  = diff[i-1]
+	// diff[i]  = (diff[i-1] + diff[i-2]) * (k-1)
+	//          = total[i-1] * (k-1)
+	modolus := 1000000007
+	if n == 0 {
+		return k
+	}
+	diff := make([]int, n)
+	same := make([]int, n)
+	diff[1] = k * (k - 1)
+	same[1] = k
+	for i := 2; i < n; i++ {
+		same[i] = diff[i-1]
+		diff[i] = ((same[i-1] + diff[i-1]) * (k - 1)) % modolus
+	}
+	return (same[n-1] + diff[n-1]) % modolus
 }
