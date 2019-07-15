@@ -1,7 +1,10 @@
 package runtimer
 
 import (
+	"crypto/elliptic"
 	"fmt"
+	"io"
+	"math/big"
 	"reflect"
 	"testing"
 	"unsafe"
@@ -83,15 +86,18 @@ func TestTypes(t *testing.T) {
 		fmt.Println("pointer elem ptrToThis :", pointert.elem.ptrToThis) // *airport addr
 		fmt.Println()
 	}
+}
 
+func TestFuncs(t *testing.T) {
 	{
-		var funcer interface{} = func(a int, b string) (rune, uint64) {
-			return 'r', 123456
+		// funcer1 and funcer2 are the same function type with different body, so they are of the same *functype
+		var funcer1 interface{} = func(elliptic.Curve, io.Reader) ([]uint8, *big.Int, *big.Int, error) {
+			return []uint8{}, nil, nil, nil
 		}
-		efacer := (*eface)(unsafe.Pointer(&funcer))
-		funcert := (*functype)(unsafe.Pointer(efacer._type))                   // extended to from *_type to *ptrtype
-		fmt.Println("reflect type      :", reflect.TypeOf(funcer).String())    // *airport
-		fmt.Println("funcer size      :", funcert.typ.size, efacer._type.size) // 8 for pointer
+		efacer := (*eface)(unsafe.Pointer(&funcer1))
+		funcert := (*functype)(unsafe.Pointer(efacer._type))                   // extended to from *_type to *functype
+		fmt.Println("reflect type     :", reflect.TypeOf(funcer1).String())    // *airport
+		fmt.Println("funcer size      :", funcert.typ.size, efacer._type.size) // 8 for func
 		fmt.Println("funcer hash      :", funcert.typ.hash)
 		fmt.Println("funcer kind      :", funcert.typ.kind, reflect.Kind(funcert.typ.kind))
 		fmt.Println("funcer str       :", funcert.typ.str)
@@ -106,5 +112,31 @@ func TestTypes(t *testing.T) {
 		for i := range funcert.out() {
 			fmt.Println("out", i, ":", reflect.Kind(funcert.out()[i].kind))
 		}
+		fmt.Println()
+	}
+
+	{
+		// for a func defined in file, first assign is to a func variable
+		var funcer2 interface{} = elliptic.GenerateKey
+		efacer := (*eface)(unsafe.Pointer(&funcer2))
+		funcert := (*functype)(unsafe.Pointer(efacer._type)) // extended to from *_type to *functype
+		// type: func(elliptic.Curve, io.Reader) ([]uint8, *big.Int, *big.Int, error)
+		fmt.Println("reflect type     :", reflect.TypeOf(funcer2).String())
+		fmt.Println("funcer size      :", funcert.typ.size, efacer._type.size) // 8 for func
+		fmt.Println("funcer hash      :", funcert.typ.hash)
+		fmt.Println("funcer kind      :", funcert.typ.kind, reflect.Kind(funcert.typ.kind))
+		fmt.Println("funcer str       :", funcert.typ.str)
+		fmt.Println("funcer ptrToThis :", funcert.typ.ptrToThis)
+
+		fmt.Println("funcer incount   :", funcert.inCount)
+		fmt.Println("funcer outcount  :", funcert.outCount)
+		fmt.Println("funcer dotdotdot :", funcert.dotdotdot())
+		for i := range funcert.in() {
+			fmt.Println("in", i, ":", reflect.Kind(funcert.in()[i].kind))
+		}
+		for i := range funcert.out() {
+			fmt.Println("out", i, ":", reflect.Kind(funcert.out()[i].kind))
+		}
+		fmt.Println()
 	}
 }
