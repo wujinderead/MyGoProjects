@@ -3,6 +3,7 @@ package neter
 import (
 	"fmt"
 	"net"
+	"os"
 	"testing"
 )
 
@@ -45,7 +46,50 @@ func TestIpNet(t *testing.T) {
 }
 
 func TestLookUp(t *testing.T) {
-	// todo finish net test
+	hostname, err := os.Hostname()
+	if err != nil {
+		t.Fatal("get hostname failed")
+	}
+	// use ip to get hostname
+	addrs := []string{"::1", "10.19.138.22", "127.0.0.2"}
+	for i := range addrs {
+		names, err := net.LookupAddr(addrs[i])
+		fmt.Println(names, err)
+	}
+	fmt.Println()
+
+	// get canonical hostname
+	hosts := []string{"localhost", hostname, "www.baidu.com", "hub.docker.com"}
+	for i := range hosts {
+		cname, err := net.LookupCNAME(hosts[i])
+		fmt.Println(cname, err)
+	}
+	fmt.Println()
+
+	// get addresses from hostname
+	for i := range hosts {
+		addrs, err := net.LookupHost(hosts[i])
+		fmt.Println(addrs, err)
+	}
+	fmt.Println()
+
+	// get ip from hostname
+	for i := range hosts {
+		ips, err := net.LookupIP(hosts[i])
+		fmt.Println(ips, err)
+	}
+	fmt.Println()
+
+	// get port from service name
+	services := []string{"ssh", "ftp", "http", "kerberos"}
+	for i := range hosts {
+		port, err := net.LookupPort("tcp", services[i])
+		fmt.Println(port, err)
+		port, err = net.LookupPort("udp", services[i])
+		fmt.Println(port, err)
+	}
+	fmt.Println()
+
 }
 
 func displayInterface(face *net.Interface) {
