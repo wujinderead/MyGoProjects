@@ -53,3 +53,37 @@ func TestPerfectSum(t *testing.T) {
 		fmt.Println(re, expect)
 	}
 }
+
+func TestMatrixChainMultiply(t *testing.T) {
+	cases := [][]interface{}{
+		{[]int{40, 20, 30, 10, 30}, 26000},
+		{[]int{10, 20, 30, 40, 30}, 30000},
+		{[]int{10, 30, 5, 60}, 4500},
+		{[]int{10, 30, 5}, 1500},
+	}
+	for i := range cases {
+		mats := cases[i][0].([]int)
+		expect := cases[i][1].(int)
+		re := matrixChainMultiplication(mats)
+		if re != expect {
+			t.Errorf("expect: %v, got: %v", expect, re)
+		}
+	}
+}
+
+func Test01Knapsack(t *testing.T) {
+	cases := [][]interface{}{
+		{[]int{60, 100, 120}, []int{10, 20, 30}, 50, 220},
+		{[]int{3, 4, 5, 6}, []int{2, 3, 4, 5}, 8, 10},
+	}
+	for i := range cases {
+		values := cases[i][0].([]int)
+		weights := cases[i][1].([]int)
+		W := cases[i][2].(int)
+		expect := cases[i][3].(int)
+		re := knapsack01(weights, values, W)
+		if re != expect {
+			t.Errorf("expect: %v, got: %v", expect, re)
+		}
+	}
+}

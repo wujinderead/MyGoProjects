@@ -1,6 +1,9 @@
 package set_problems
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // https://www.geeksforgeeks.org/coin-change-dp-7/
 // Given a value N, if we want to make change for N cents,
@@ -136,7 +139,60 @@ func perfectHelper(subs *[][]int, sub []int, index int, set []int, has [][]bool,
 // A(BC) = (30×5×60) + (10×30×60) = 9000 + 18000 = 27000 operations.
 func matrixChainMultiplication(mats []int) int {
 	// let min(i, j) be the minimum operation of matrix[i...j]
-	// then min(i, j) = Min(min(i,i+2)*min(i+2,j), min(i,i+3)*min(i+3,j), ...)
-	// todo
-	return 0
+	// then min(i, j) = Min(min(i,i+1)+min(i+1,j), min(i,i+2)+min(i+2,j), ...)
+	// time O(n³), space O(N²)
+	N := len(mats)
+	sum := make([][]int, N-1) // store min cost
+	for i := 0; i < N-1; i++ {
+		sum[i] = make([]int, N-1)
+	}
+	for i := 0; i < N-1; i++ {
+		sum[i][i] = 0 // base case sum[i][i]=0, i.e., the diagonal is all zero
+	}
+	for sub := 1; sub < N-1; sub++ { // the matrix is updated diagonally
+		for i := 0; i+sub < N-1; i++ {
+			j := i + sub
+			// calculate sum[i][j]
+			sum[i][j] = math.MaxInt64
+			for k := i; k < j; k++ { // get min sum
+				// for matrix[a...b], row number is mats[a], col number is mats[b+1]
+				cost := sum[i][k] + sum[k+1][j] + mats[i]*mats[k+1]*mats[j+1]
+				if cost < sum[i][j] {
+					sum[i][j] = cost
+				}
+			}
+		}
+	}
+	return sum[0][N-2]
+}
+
+// 01 knapsack problem
+// Given weights and values of n items, put these items in a knapsack
+// of capacity W to get the maximum total value in the knapsack.
+func knapsack01(weight, value []int, W int) int {
+	// denote mv(k, w) be the max value of k items with limit weight w.
+	// for last item with index k, if we include it, value = max(k-1, w).
+	// if include it, value = value[k]+max(k-1, w-weight[k]), thus:
+	// mv(k, w) = max( mv(k-1, w), value[k]+mv(k-1, w-weight[k]) )
+	// base case: mv(0, w>=weight[0]) = value[0], mv(x, 0)=0
+	// time complexity O(nW), space O(nW) can be reduced to O(W)
+	mv := make([][]int, len(weight))
+	for i := 0; i < len(weight); i++ {
+		mv[i] = make([]int, W+1)
+	}
+	for i := 0; i < len(weight); i++ {
+		mv[i][0] = 0
+	}
+	for j := weight[0]; j <= W; j++ { // use only first item, so mv[0][j>=weight[0]]=value[0]
+		mv[0][j] = value[0]
+	}
+	for i := 1; i < len(weight); i++ {
+		for j := 1; j <= W; j++ {
+			mv[i][j] = mv[i-1][j]
+			if j-weight[i] >= 0 && mv[i][j] < value[i]+mv[i-1][j-weight[i]] {
+				mv[i][j] = value[i] + mv[i-1][j-weight[i]]
+			}
+		}
+	}
+	return mv[len(weight)-1][W]
 }
