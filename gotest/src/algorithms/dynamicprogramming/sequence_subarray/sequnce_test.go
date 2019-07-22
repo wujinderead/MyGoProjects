@@ -19,3 +19,33 @@ func TestLongestIncreasingSubsequence(t *testing.T) {
 		}
 	}
 }
+
+func TestLongestPalindromicSubsequence(t *testing.T) {
+	cases := [][]interface{}{
+		{"", 0},
+		{"a", 1},
+		{"aa", 2},
+		{"ab", 1},
+		{"aba", 3},
+		{"abca", 3},
+		{"aaca", 3},
+		{"BBABCBCAB", 7},
+	}
+	for i := range cases {
+		str := cases[i][0].(string)
+		expect := cases[i][1].(int)
+		re := longestPalindromicSubsequence(str)
+		if re != expect {
+			t.Error(str, expect, re)
+		}
+	}
+	// test lps o(n) space
+	for i := range cases {
+		str := cases[i][0].(string)
+		expect := cases[i][1].(int)
+		re := longestPalindromicSubsequenceSpaceOn(str)
+		if re != expect {
+			t.Error(str, expect, re)
+		}
+	}
+}
