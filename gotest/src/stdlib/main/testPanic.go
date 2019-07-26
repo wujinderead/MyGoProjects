@@ -1,12 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 )
 
 func main() {
 	//testPanic()
-	testGoroutinePanic()
+	//testGoroutinePanic()
+	//testTwice()
+	//testCantRecover()
+	testRecoverOuter()
 }
 
 func testPanic() {
@@ -80,4 +84,45 @@ func testGoroutinePanic() {
 		<-ch
 	}
 	log.Println("main done")
+}
+
+func testRecoverTwice() {
+	// output:
+	// can't recover: a
+	// i can recover: a
+	defer func() {
+		if i := recover(); i != nil { // recover in outer defer
+			fmt.Println("i can recover:", i.(string))
+		}
+	}()
+	defer func() {
+		if i := recover(); i != nil {
+			fmt.Println("can't recover:", i.(string))
+			panic(i) // panic in inner defer
+		}
+	}()
+	panic("a")
+}
+
+func testCantRecover() {
+	defer func() {
+		if i := recover(); i != nil {
+			fmt.Println("can't recover:", i.(string))
+			panic(i) // the panic trace stack will print both
+		}
+	}()
+	panic("a")
+}
+
+func testRecoverOuter() {
+	defer func() {
+		if i := recover(); i != nil {
+			fmt.Println("recover:", i.(string))
+		}
+	}()
+	inner()
+}
+
+func inner() {
+	panic("a")
 }
