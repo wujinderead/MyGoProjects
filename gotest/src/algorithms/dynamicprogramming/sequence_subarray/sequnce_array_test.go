@@ -76,6 +76,27 @@ func TestLongestPalindromicSubarray(t *testing.T) {
 	}
 }
 
+func TestLongestCommonSubsequence(t *testing.T) {
+	cases := [][]interface{}{
+		{"xabxac", "abcabxabcd", 5},
+		{"xabxaabxa", "babxba", 5},
+		{"abede", "eghie", 2},
+		{"pqrst", "uvwxyz", 0},
+		{"a", "bcde", 0},
+		{"a", "bcade", 1},
+		{"adsd", "", 0},
+	}
+	for i := range cases {
+		a := cases[i][0].(string)
+		b := cases[i][1].(string)
+		expect := cases[i][2].(int)
+		re := longestCommonSubsequence(a, b)
+		if re != expect {
+			t.Error(a, b, expect, re)
+		}
+	}
+}
+
 func TestLongestCommonSubarray(t *testing.T) {
 	cases := [][]interface{}{
 		{"xabxac", "abcabxabcd", "abxa"},
