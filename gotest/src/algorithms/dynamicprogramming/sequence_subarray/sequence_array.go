@@ -136,7 +136,50 @@ func longestPalindromicSubarray(str string) string {
 	return str[maxl : maxl+longest]
 }
 
-// get the length of the longest common subarray of two strings
+// get the length of the longest common sub sequence of two strings
+func longestCommonSubsequence(a, b string) int {
+	if len(a) == 0 || len(b) == 0 {
+		return 0
+	}
+	// let lcs(i, j) be the length of longest common sub sequence of a[0...i] and b[0...j].
+	// then, if a[i]==b[j], lcs(i, j)=lcs(i-1, j-1)+1; if not, lcs(i, j)=max( lcs(i-1, j), lcs(i, j-1) )
+	// base case: lcs(0, 0)=1 if a[0]==b[0]
+	// time complexity O(mn), space O(mn) can be reduced to O(min(m,n)) since updated line by line
+	if len(b) > len(a) {
+		b, a = a, b // let b be shorter
+	}
+	lcs := make([]int, len(b))
+	// set up lcs(0, j)
+	if a[0] == b[0] {
+		lcs[0] = 1
+	}
+	for j := 1; j < len(b); j++ {
+		if a[0] == b[j] {
+			lcs[j] = 1
+		} else {
+			lcs[j] = lcs[j-1]
+		}
+	}
+	// dp
+	for i := 1; i < len(a); i++ {
+		tmp := lcs[0] // tmp to store lcs(i-1, j-1)
+		if a[i] == b[0] {
+			lcs[0] = 1 // if a[i]==b[0], lcs(i, 0)=1; else lcs(i, 0)=lcs(i-1, 0) which is still lcs[0]
+		}
+		for j := 1; j < len(b); j++ {
+			tmp2 := lcs[j]
+			if a[i] == b[j] {
+				lcs[j] = tmp + 1 // if a[i]==b[j], lcs(i, j)=lcs(i-1, j-1)+1
+			} else {
+				lcs[j] = max(lcs[j-1], lcs[j]) // else, lcs(i, j)=max( lcs(i-1, j), lcs(i, j-1) )
+			}
+			tmp = tmp2
+		}
+	}
+	return lcs[len(b)-1]
+}
+
+// find the the longest common subarray of two strings
 func longestCommonSubarray(a, b string) string {
 	if len(a) == 0 || len(b) == 0 {
 		return ""
