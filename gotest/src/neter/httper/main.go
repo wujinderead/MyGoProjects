@@ -1,16 +1,24 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strings"
+	"unsafe"
 )
 
 func main() {
-	testGet()
-	testPost()
+	//testGet()
+	//testPost()
+	//testPostForm()
+	//testHead()
+	//testDo()
+	testRedirect()
 }
 
 func testGet() {
@@ -43,8 +51,176 @@ func testGet() {
 }
 
 func testPost() {
-	// todo http://httpbin.org/
+	buf := bytes.NewBufferString("good good good")
+	resp, err := http.Post("http://httpbin.org/post", "text/plain", buf)
+	if err != nil {
+		fmt.Println("post err:", err)
+		return
+	}
+	defer toClose(resp.Body)
+
+	printResponse(resp)
+	fmt.Println()
+
+	printTlsConnState(resp.TLS)
+	fmt.Println()
+
+	printRequest(resp.Request)
+	fmt.Println()
+
+	printTlsConnState(resp.Request.TLS)
+	fmt.Println()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("read body err:", err)
+		return
+	}
+	fmt.Println("response body:")
+	fmt.Println(string(body))
 }
+
+func testPostForm() {
+	parameters := map[string][]string{
+		"country": {"mexico"},
+		"cities":  {"mexico city", "morelia", "guadalajara"},
+	}
+	resp, err := http.PostForm("http://httpbin.org/post", url.Values(parameters))
+	if err != nil {
+		fmt.Println("post err:", err)
+		return
+	}
+	defer toClose(resp.Body)
+
+	printResponse(resp)
+	fmt.Println()
+
+	printTlsConnState(resp.TLS)
+	fmt.Println()
+
+	printRequest(resp.Request)
+	fmt.Println()
+
+	printTlsConnState(resp.Request.TLS)
+	fmt.Println()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("read body err:", err)
+		return
+	}
+	fmt.Println("response body:")
+	fmt.Println(string(body))
+}
+
+func testHead() {
+	// only return response head
+	resp, err := http.Head("https://cn.bing.com/search?q=not+really")
+	if err != nil {
+		fmt.Println("head err:", err)
+		return
+	}
+	defer toClose(resp.Body)
+
+	printResponse(resp)
+	fmt.Println()
+
+	printTlsConnState(resp.TLS)
+	fmt.Println()
+
+	printRequest(resp.Request)
+	fmt.Println()
+
+	printTlsConnState(resp.Request.TLS)
+	fmt.Println()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("read body err:", err)
+		return
+	}
+	fmt.Println("response body:")
+	fmt.Println(string(body))
+}
+
+func testDo() {
+	req := &http.Request{}
+	req.Method = "PUT"
+	req.URL = &url.URL{
+		Scheme: "http",
+		Host:   "httpbin.org",
+		Path:   "/put",
+	}
+	req.Proto = "HTTP/1.1"
+	req.ProtoMajor = 1
+	req.ProtoMinor = 1
+	req.Body = ioutil.NopCloser(strings.NewReader("我的天呐"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("head err:", err)
+		return
+	}
+	defer toClose(resp.Body)
+
+	printResponse(resp)
+	fmt.Println()
+
+	printTlsConnState(resp.TLS)
+	fmt.Println()
+
+	fmt.Println("request:", uintptr(unsafe.Pointer(req)), "resp req:", uintptr(unsafe.Pointer(resp.Request)))
+	printRequest(resp.Request)
+	fmt.Println()
+
+	printTlsConnState(resp.Request.TLS)
+	fmt.Println()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("read body err:", err)
+		return
+	}
+	fmt.Println("response body:")
+	fmt.Println(string(body))
+}
+
+func testRedirect() {
+	// todo request
+	req := &http.Request{}
+	req.URL, _ = url.Parse("http://t.cn/AiYeOD5V")
+	req.Method = http.MethodGet
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			fmt.Println("redirect req:", req.URL.String())
+			fmt.Print("via: ")
+			for i := range via {
+				fmt.Print(via[i].URL.String(), " ")
+			}
+			fmt.Println()
+			return nil
+		},
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("do err:", err)
+		return
+	}
+	defer toClose(resp.Body)
+
+	printResponse(resp)
+	fmt.Println("resp.req.url:", resp.Request.URL.String())
+	fmt.Println("resp.req.remoteAddr:", resp.Request.RemoteAddr)
+	fmt.Println()
+
+	printTlsConnState(resp.TLS)
+	fmt.Println()
+}
+
+// http://t.cn/AiYeOD5V
+// => https://video.weibo.com/show?fid=1034:4402032229162490
+// => https://weibo.com/tv/v/I0RoznJSK?fid=1034:4402032229162490
+// => https://passport.weibo.com/visitor/visitor?entry=miniblog&a=enter&url=https%3A%2F%2Fweibo.com%2Ftv%2Fv%2FI0RoznJSK%3Ffid%3D1034%3A4402032229162490&domain=.weibo.com&sudaref=https%3A%2F%2Fvideo.weibo.com%2Fshow%3Ffid%3D1034%3A4402032229162490&ua=php-sso_sdk_client-0.6.28&_rand=1565083484.3095
 
 func toClose(closer io.Closer) {
 	if closer != nil {
@@ -123,6 +299,10 @@ func printRequest(req *http.Request) {
 	fmt.Println("req Trailer         :", req.Trailer)
 	fmt.Println("req RemoteAddr      :", req.RemoteAddr)
 	fmt.Println("req RequestURI      :", req.RequestURI)
+	fmt.Println()
+
+	printCookies(req.Cookies())
+
 	if req.Body != nil {
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
@@ -144,12 +324,54 @@ func printResponse(resp *http.Response) {
 	fmt.Println("resp TransferEncoding:", resp.TransferEncoding)
 	fmt.Println("resp Close:          :", resp.Close)
 	fmt.Println("resp Uncompressed    :", resp.Uncompressed)
+	location, err := resp.Location()
+	if err != nil {
+		fmt.Println("resp location err:", err)
+	} else {
+		fmt.Println("rest Location    :", location.String())
+	}
 	fmt.Println()
+
+	printCookies(resp.Cookies())
 
 	for k, v := range resp.Header {
 		fmt.Println("resp header", k, "=", v)
 	}
 	for k, v := range resp.Trailer {
 		fmt.Println("resp trailer header", k, "=", v)
+	}
+}
+
+func printCookie(cookie *http.Cookie) {
+	fmt.Println("Name      :", cookie.Name)
+	fmt.Println("Value     :", cookie.Value)
+	fmt.Println("Path      :", cookie.Path)
+	fmt.Println("Domain    :", cookie.Domain)
+	fmt.Println("Expires   :", cookie.Expires)
+	fmt.Println("RawExpires:", cookie.RawExpires)
+	fmt.Println("MaxAge    :", cookie.MaxAge)
+	fmt.Println("Secure    :", cookie.Secure)
+	fmt.Println("HttpOnly  :", cookie.HttpOnly)
+	fmt.Println("SameSite  :", cookie.SameSite)
+	fmt.Println("Raw       :", cookie.Raw)
+	fmt.Println("Unparsed  :", cookie.Unparsed)
+}
+
+func printCookies(cookies []*http.Cookie) {
+	for i, cookie := range cookies {
+		fmt.Println("cookies", i, ":")
+		fmt.Println("Name      :", cookie.Name)
+		fmt.Println("Value     :", cookie.Value)
+		//fmt.Println("Path      :", cookie.Path)
+		fmt.Println("Domain    :", cookie.Domain)
+		//fmt.Println("Expires   :", cookie.Expires)
+		//fmt.Println("RawExpires:", cookie.RawExpires)
+		//fmt.Println("MaxAge    :", cookie.MaxAge)
+		//fmt.Println("Secure    :", cookie.Secure)
+		//fmt.Println("HttpOnly  :", cookie.HttpOnly)
+		//fmt.Println("SameSite  :", cookie.SameSite)
+		//fmt.Println("Raw       :", cookie.Raw)
+		//fmt.Println("Unparsed  :", cookie.Unparsed)
+		fmt.Println()
 	}
 }
