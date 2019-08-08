@@ -186,16 +186,29 @@ func testDo() {
 }
 
 func testRedirect() {
-	// todo request
 	req := &http.Request{}
 	req.URL, _ = url.Parse("http://t.cn/AiYeOD5V")
 	req.Method = http.MethodGet
+	fmt.Println("=== initial request: ===", req.URL)
+	fmt.Println()
+
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			fmt.Println("redirect req:", req.URL.String())
-			fmt.Print("via: ")
-			for i := range via {
-				fmt.Print(via[i].URL.String(), " ")
+			// redirect response
+			redirectResp := req.Response
+			fmt.Println("=== redirect response: ===")
+			fmt.Println("status:", redirectResp.Status)
+			printTlsConnState(redirectResp.TLS)
+			for k, v := range redirectResp.Header {
+				fmt.Println("resp header", k, "=", v)
+			}
+			fmt.Println()
+
+			// redirected request
+			fmt.Println("=== redirected request: ===")
+			fmt.Println("req url:", req.URL.String())
+			for k, v := range req.Header {
+				fmt.Println("req header", k, "=", v)
 			}
 			fmt.Println()
 			return nil
@@ -208,19 +221,13 @@ func testRedirect() {
 	}
 	defer toClose(resp.Body)
 
+	fmt.Println("=== final response: ===")
 	printResponse(resp)
-	fmt.Println("resp.req.url:", resp.Request.URL.String())
-	fmt.Println("resp.req.remoteAddr:", resp.Request.RemoteAddr)
 	fmt.Println()
 
 	printTlsConnState(resp.TLS)
 	fmt.Println()
 }
-
-// http://t.cn/AiYeOD5V
-// => https://video.weibo.com/show?fid=1034:4402032229162490
-// => https://weibo.com/tv/v/I0RoznJSK?fid=1034:4402032229162490
-// => https://passport.weibo.com/visitor/visitor?entry=miniblog&a=enter&url=https%3A%2F%2Fweibo.com%2Ftv%2Fv%2FI0RoznJSK%3Ffid%3D1034%3A4402032229162490&domain=.weibo.com&sudaref=https%3A%2F%2Fvideo.weibo.com%2Fshow%3Ffid%3D1034%3A4402032229162490&ua=php-sso_sdk_client-0.6.28&_rand=1565083484.3095
 
 func toClose(closer io.Closer) {
 	if closer != nil {
