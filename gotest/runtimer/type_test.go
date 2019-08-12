@@ -140,3 +140,26 @@ func TestFuncs(t *testing.T) {
 		fmt.Println()
 	}
 }
+
+func TestChans(t *testing.T) {
+	var chaners = []interface{}{make(chan<- int), make(<-chan string), make(chan []int, 2)}
+	for i := range chaners {
+		efacer := (*eface)(unsafe.Pointer(&chaners[i]))
+		chanert := (*chantype)(unsafe.Pointer(efacer._type))
+		fmt.Println("reflect type      :", reflect.TypeOf(chaners[i]).String())
+		fmt.Println("chanert size      :", chanert.typ.size, efacer._type.size) // 8 for chan, actually *runtime.hchan
+		fmt.Println("chanert hash      :", chanert.typ.hash)
+		fmt.Println("chanert kind      :", chanert.typ.kind, reflect.Kind(chanert.typ.kind))
+		fmt.Println("chanert str       :", chanert.typ.str)
+		fmt.Println("chanert ptrToThis :", chanert.typ.ptrToThis)
+
+		// 1 for <-chan (receive only), 2 for chan<- (send only), 3 for chan (double direction)
+		fmt.Println("chanert direction :", chanert.dir)
+		fmt.Println("chanert elem size      :", chanert.elem.size)
+		fmt.Println("chanert elem hash      :", chanert.elem.hash)
+		fmt.Println("chanert elem kind      :", chanert.elem.kind, reflect.Kind(chanert.elem.kind))
+		fmt.Println("chanert elem str       :", chanert.elem.str)
+		fmt.Println("chanert elem ptrToThis :", chanert.elem.ptrToThis)
+		fmt.Println()
+	}
+}

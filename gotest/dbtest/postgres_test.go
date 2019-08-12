@@ -29,6 +29,23 @@ func TestPostgresPing(t *testing.T) {
 	}
 }
 
+func TestPostgresUnixSocket(t *testing.T) {
+	// postgres must run on the same host to connect via unix socket
+	db, err := sql.Open("postgres",
+		"dbname=postgres user=test password=test123 host=/var/run/postgresql/ port=5432 sslmode=disable")
+	if err != nil {
+		fmt.Println("open err:", err)
+		return
+	}
+	defer closeResource("pq db", db)
+
+	err = db.Ping()
+	if err != nil {
+		fmt.Println("ping err:", err)
+		return
+	}
+}
+
 func TestCreateTableInsertQuery(t *testing.T) {
 	db, err := sql.Open("postgres", "postgres://test:test123@172.17.48.4:5432/postgres?sslmode=disable")
 	if err != nil {
