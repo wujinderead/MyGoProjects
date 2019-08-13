@@ -18,7 +18,7 @@ func main() {
 	//testPostForm()
 	//testHead()
 	//testDo()
-	testRedirect()
+	testRedirectResponse()
 }
 
 func testGet() {
@@ -158,7 +158,7 @@ func testDo() {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("head err:", err)
+		fmt.Println("do err:", err)
 		return
 	}
 	defer toClose(resp.Body)
@@ -185,7 +185,7 @@ func testDo() {
 	fmt.Println(string(body))
 }
 
-func testRedirect() {
+func testRedirectResponse() {
 	req := &http.Request{}
 	req.URL, _ = url.Parse("http://t.cn/AiYeOD5V")
 	req.Method = http.MethodGet
@@ -194,7 +194,7 @@ func testRedirect() {
 
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			// redirect response
+			// last 302 response
 			redirectResp := req.Response
 			fmt.Println("=== redirect response: ===")
 			fmt.Println("status:", redirectResp.Status)
@@ -204,7 +204,7 @@ func testRedirect() {
 			}
 			fmt.Println()
 
-			// redirected request
+			// request to redirected destination
 			fmt.Println("=== redirected request: ===")
 			fmt.Println("req url:", req.URL.String())
 			for k, v := range req.Header {

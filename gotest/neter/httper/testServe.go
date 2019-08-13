@@ -21,8 +21,10 @@ func main() {
 	//testHandleServe()
 	//testServeFile()
 	//testServeContent()
-	testServeTls()
+	//testServeTls()
 	//createKetAndCert()
+	//testFileServer()
+	testStripPrefix()
 }
 
 func testHandleServe() {
@@ -112,6 +114,28 @@ func testServeContent() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 	// http :8080/content 'Range:bytes=0-100,200-300'
 	// http :8080/content 'If-Modified-Since:Tue, 11 Jun 2019 17:27:51 GMT'
+}
+
+func testFileServer() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("get user home err:", err)
+		return
+	}
+	// file server can only handle at /
+	log.Fatal(http.ListenAndServe(":8080", http.FileServer(http.Dir(home))))
+}
+
+func testStripPrefix() {
+	// use StripPrefix to serve file system in alternative path
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("get user home err:", err)
+		return
+	}
+	http.Handle("/home", http.StripPrefix("/home", http.FileServer(http.Dir(home))))
+	http.Handle("/goroot", http.StripPrefix("/goroot", http.FileServer(http.Dir("/usr/local/go"))))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func testServeTls() {
