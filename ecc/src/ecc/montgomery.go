@@ -404,12 +404,27 @@ func (curve *MtCurve) diffAddProjective(x1, z1, x2, z2, x3, z3 *big.Int) (x5, z5
 }
 
 // form 1:
-// to map montgomery: "Bv² ≡ u³ + Au² + u mod p" to edwards: "ax² + y² ≡ 1 + Dx²y² mod p"
-// set edwards.a = (mont.A+2)/mont.B
-//     edwards.D = (mont.A-2)/mont.B
+// the birational equivalence between montgomery curve and twisted edwards curve:
+// to birational map montgomery curve (Bv² = u³ + Au² + u) to twisted edwards curve: (ax² + y² = 1 + Dx²y²)
+// coefficient:            point convert:
+//    a = (A+2)/B             x = u/v
+//    D = (A-2)/B             y = ±(u-1)/(u+1)
 //
-// map "v² ≡ u³ + Au² + u mod p" to "ax² + y² ≡ 1 + Dx²y² mod p"
-// edward.(x, y) = ( sqrt(mont.B) * u/v, ±(u-1)/(u+1) )
+// if we want to convert montgomery curve to edwards curve (i.e., a=1), we need B=A+2,
+// thus, to convert (v² = u³ + Au² + u) to (x² + y² = 1 + Dx²y²),
+// we first convert (v² = u³ + Au² + u) to (Bv'² = u³ + Au² + u), by setting v'=v/sqrt(B),
+// then to edwards curve, the coefficients become: a=1, D=(A-2)/(A+2),
+// and point conversion become: x = u/v' = sqrt(B)*u/v
+//
+// similarly, if we want a twisted edwards curve, i.e., a = (A+2)/B ≠ 1,
+// we need to choose the proper value of B.
+// however, we must make sure that sqrt(B) is existed in the finite field Fp.
+//
+// example:
+// to convert curve25519 (v² = u³ + 486662u² + u) to twisted edwards curve with a=-1,
+// we need B = -(A+2) = -486664, then D = (A-2)/B = -486660/486664 = -121665/121666,
+// i.e.  -x² + y² = 1 - 121665/121666 x²y²,
+// with x = sqrt(-486664)*u/v, y = ±(u-1)/(u+1)
 func (curve *MtCurve) ToEdwardsCurveForm1(a *big.Int) (*EdCurve, *big.Int) {
 	edwards := new(EdCurve)
 	edwards.Name = "Edwards form1 ed.a=(mt.A+2)/mt.B of " + curve.Name
@@ -429,8 +444,8 @@ func (curve *MtCurve) ToEdwardsCurveForm1(a *big.Int) (*EdCurve, *big.Int) {
 	return edwards, sqrtB
 }
 
-// form1
-// edward.(x, y) = ( sqrt(mont.B) * u/v, ±(u-1)/(u+1) )
+// form 1
+// x = sqrt(B)*u/v, y = ±(u-1)/(u+1)
 func (curve *MtCurve) ToEdwardsPointForm1(sqrtB *big.Int, p *EcPoint) (p1, p2 *EcPoint) {
 	uAdd1 := new(big.Int).Add(p.X, ONE)
 	uSub1 := new(big.Int).Sub(p.X, ONE)
@@ -446,12 +461,26 @@ func (curve *MtCurve) ToEdwardsPointForm1(sqrtB *big.Int, p *EcPoint) (p1, p2 *E
 }
 
 // form 2:
-// to map montgomery: "Bv² ≡ u³ + Au² + u mod p" to edwards: "ax² + y² ≡ 1 + Dx²y² mod p"
-// set edwards.a = (mont.A-2)/mont.B
-//     edwards.D = (mont.A+2)/mont.B
+// to birational map montgomery curve (Bv² = u³ + Au² + u) to twisted edwards curve: (ax² + y² = 1 + Dx²y²)
+// coefficient:            point convert:
+//    a = (A-2)/B             x = u/v
+//    D = (A+2)/B             y = ±(u+1)/(u-1)
 //
-// map "v² ≡ u³ + Au² + u mod p" to "ax² + y² ≡ 1 + Dx²y² mod p"
-// edward.(x, y) = ( sqrt(mont.B) * u/v, ±(u+1)/(u-1) )
+// if we want to convert montgomery curve to edwards curve (i.e., a=1), we need B=A-2,
+// thus, to convert (v² = u³ + Au² + u) to (x² + y² = 1 + Dx²y²),
+// we first convert (v² = u³ + Au² + u) to (Bv'² = u³ + Au² + u), by setting v'=v/sqrt(B),
+// then to edwards curve, the coefficients become: a=1, D=(A+2)/(A-2),
+// and point conversion become: x = u/v' = sqrt(B)*u/v
+//
+// similarly, if we want a twisted edwards curve, i.e., a = (A-2)/B ≠ 1,
+// we need to choose the proper value of B.
+// however, we must make sure that sqrt(B) is existed in the finite field Fp.
+//
+// example:
+// to convert curve448 (v² = u³ + 156326² + u) to edwards curve with a=1,
+// we need B = A-2 = 156324, then D = (A+2)/B = 156328/156324 = 39082/39081,
+// i.e.  x² + y² = 1 + 39082/39081 x²y²,
+// with x = sqrt(156324)*u/v, y = ±(u+1)/(u-1)
 func (curve *MtCurve) ToEdwardsCurveForm2(a *big.Int) (*EdCurve, *big.Int) {
 	edwards := new(EdCurve)
 	edwards.Name = "Edwards form1 ed.a=(mt.A-2)/mt.B of " + curve.Name
@@ -472,7 +501,7 @@ func (curve *MtCurve) ToEdwardsCurveForm2(a *big.Int) (*EdCurve, *big.Int) {
 }
 
 // form 2
-// edward.(x, y) = ( sqrt(mont.B) * u/v, ±(1+u)/(1-u) )
+// x = sqrt(B)*u/v, y = ±(u+1)/(u-1)
 func (curve *MtCurve) ToEdwardsPointForm2(sqrtB *big.Int, p *EcPoint) (p1, p2 *EcPoint) {
 	uAdd1 := new(big.Int).Add(p.X, ONE)
 	uSub1 := new(big.Int).Sub(p.X, ONE)
