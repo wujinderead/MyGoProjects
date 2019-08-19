@@ -1,10 +1,10 @@
 package util
 
 import (
-	"testing"
 	"fmt"
-	"sync"
 	"math/rand"
+	"sync"
+	"testing"
 	"time"
 )
 
@@ -16,7 +16,7 @@ func Test_NextBytes(t *testing.T) {
 
 func Test_NextBytesMulti(t *testing.T) {
 	var wg sync.WaitGroup
-	for i:=0; i<3; i++ {
+	for i := 0; i < 3; i++ {
 		j := i
 		wg.Add(1)
 		go func() {
@@ -48,8 +48,8 @@ func TestBytes(t *testing.T) {
 func TestRand(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	a := 17
-	for i:=0;i<9;i++ {
-		b := rand.Intn(253)+2
+	for i := 0; i < 9; i++ {
+		b := rand.Intn(253) + 2
 		fmt.Printf("#172.%d.%d.1\n", a, b)
 		fmt.Printf("#172.%d.%d.0\n", a, b)
 		fmt.Printf("#172.%d.%d.0/24\n", a, b)

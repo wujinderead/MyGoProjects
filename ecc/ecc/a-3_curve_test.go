@@ -1,11 +1,11 @@
 package ecc
 
 import (
-	"encoding/hex"
-	"testing"
-	"crypto/rand"
-	"fmt"
 	"crypto/elliptic"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"testing"
 )
 
 func TestAneg3Curve_Arithmetic(t *testing.T) {
@@ -83,8 +83,8 @@ func TestEquation_Aneg3Curve(t *testing.T) {
 			return
 		}
 		fmt.Println("rand: ", hex.EncodeToString(byter))
-		x, y := p256.ScalarBaseMult(byter)  // golang native scala multiply (in Jacobian coordinates)
-		m := curve.ScalaMultBase(byter)     // direct arithmetic
+		x, y := p256.ScalarBaseMult(byter)                                     // golang native scala multiply (in Jacobian coordinates)
+		m := curve.ScalaMultBase(byter)                                        // direct arithmetic
 		n := (*Aneg3Curve)(curve).ScalaMult(&EcPoint{curve.X, curve.Y}, byter) // in projective coordinates
 		fmt.Println("x: ", x.String())
 		fmt.Println("y: ", y.String())
@@ -101,8 +101,8 @@ func TestEquation_Aneg3Curve(t *testing.T) {
 			return
 		}
 		fmt.Println("rand: ", hex.EncodeToString(byter))
-		x, y := p521.ScalarBaseMult(byter)  // golang native scala multiply
-		m := curve.ScalaMultBase(byter)     // our scala multiply
+		x, y := p521.ScalarBaseMult(byter)                                     // golang native scala multiply
+		m := curve.ScalaMultBase(byter)                                        // our scala multiply
 		n := (*Aneg3Curve)(curve).ScalaMult(&EcPoint{curve.X, curve.Y}, byter) // in projective coordinates
 		fmt.Println("x: ", x.String())
 		fmt.Println("y: ", y.String())
@@ -114,8 +114,8 @@ func TestEquation_Aneg3Curve(t *testing.T) {
 func TestEquation_Aneg3Curve_Openssl(t *testing.T) {
 	initEd.Do(initEcCurves)
 	for i, name := range Aneg3CurveNames {
-		_, k1, px1, py1 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
-		_, k2, px2, py2 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
+		_, k1, px1, py1 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
+		_, k2, px2, py2 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
 		curve, err := GetFpCurve(name)
 		if err != nil {
 			t.Errorf("koblitz curve '%s' not esist.\n", name)

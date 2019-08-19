@@ -1,11 +1,11 @@
 package ecc
 
 import (
-	"testing"
 	"crypto/rand"
-	"fmt"
 	"encoding/hex"
-				)
+	"fmt"
+	"testing"
+)
 
 func TestKoblitzCurve_Arithmetic(t *testing.T) {
 	k1, k2 := make([]byte, 32), make([]byte, 32)
@@ -74,8 +74,8 @@ func TestKoblitzCurve_Add_Double(t *testing.T) {
 func TestEquation_KoblitzCurve(t *testing.T) {
 	initEd.Do(initEcCurves)
 	for i, name := range KoblitzCurveNames {
-		_, k1, px1, py1 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
-		_, k2, px2, py2 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
+		_, k1, px1, py1 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
+		_, k2, px2, py2 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
 		curve, err := GetFpCurve(name)
 		if err != nil {
 			t.Errorf("koblitz curve '%s' not esist.\n", name)
@@ -92,5 +92,3 @@ func TestEquation_KoblitzCurve(t *testing.T) {
 		fmt.Println(mul2.X.Cmp(px2), mul2.Y.Cmp(py2))
 	}
 }
-
-

@@ -25,8 +25,8 @@ func TestF2mCurve_IsOnCurve(t *testing.T) {
 func TestEquation_F2m_Openssl(t *testing.T) {
 	initEd.Do(initEcCurves)
 	for i, name := range F2mCurveNames {
-		_, k1, px1, py1 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
-		_, k2, px2, py2 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
+		_, k1, px1, py1 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
+		_, k2, px2, py2 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
 		curve, err := GetF2mCurve(name)
 		if err != nil {
 			t.Errorf("koblitz curve '%s' not esist.\n", name)

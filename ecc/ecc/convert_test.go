@@ -154,18 +154,18 @@ func TestEdCurve_ToMontgomeryPointForm1(t *testing.T) {
 	p1, p2 := NewPoint(), NewPoint()
 	p1.X = ModFraction(oneAddY, oneSubY, curve.P) // (1+y)/(1-y)
 	fmt.Println("p1x: ", p1.X)
-	p1.Y = ModFraction(p1.X, p.X, curve.P)        // u/x
+	p1.Y = ModFraction(p1.X, p.X, curve.P) // u/x
 	fmt.Println("p1y: ", p1.Y)
-	p1.Y.Mul(p1.Y, sqrtB)                         // sqrtB * u/x
+	p1.Y.Mul(p1.Y, sqrtB) // sqrtB * u/x
 	fmt.Println("p1y: ", p1.Y)
 	p1.Y.Mod(p1.Y, curve.P)
 	fmt.Println("p1y: ", p1.Y)
 
 	p2.X = ModFraction(oneSubY, oneAddY, curve.P) // (1+y)/(1-y)
 	fmt.Println("p2x: ", p2.X)
-	p2.Y = ModFraction(p2.X, p.X, curve.P)        // u/x
+	p2.Y = ModFraction(p2.X, p.X, curve.P) // u/x
 	fmt.Println("p2y: ", p2.Y)
-	p2.Y.Mul(p2.Y, sqrtB)                         // sqrtB * u/x
+	p2.Y.Mul(p2.Y, sqrtB) // sqrtB * u/x
 	fmt.Println("p2y: ", p2.Y)
 	p2.Y.Mod(p2.Y, curve.P)
 	fmt.Println("p2y: ", p2.Y)

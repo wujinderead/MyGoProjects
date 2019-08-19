@@ -1,14 +1,14 @@
 package util
 
 import (
-	"testing"
-	"encoding/pem"
-	"io/ioutil"
 	"crypto/x509"
-	"fmt"
-	"encoding/hex"
-	"golang.org/x/crypto/ssh"
 	"encoding/base64"
+	"encoding/hex"
+	"encoding/pem"
+	"fmt"
+	"golang.org/x/crypto/ssh"
+	"io/ioutil"
+	"testing"
 )
 
 const rsaKeyStr = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCjWKgqV5fSp8ThXVwvQc29988gXUNZ06fxCHXPjaO/TI7Dj8EhsaD3pt691d1oorDfpiKe1Cs+GqiI6bUb90eBljUgoEkYL5SroOsQOkBTqXTij0np4/piOt2ofQJNMDqCbY+D8GX3yGZRWtc0rfrU+t1TzmrWqsXyrbKHcAp4x6mGTjoFwHMb+bzoRcZyg6PwnV19MMJQj0BMEs7KJyzd7kiz3oE5yLIIkp1eCmBi2tRkuc83+rCNluqtfZhPTvnf8IpBY7GsCQwytyl2cdmGNO2bXxZGktYmLIAU3eOIHdEwWyBZGhAfh/70mbcIkQ+2M5VjJMPIQbodWKhExH4X"
@@ -37,7 +37,7 @@ func TestRsaKey(t *testing.T) {
 	fmt.Println("name:", ecPrivKey.Curve.Params().Name)
 	fmt.Println("d:", hex.EncodeToString(ecPrivKey.D.Bytes()))
 
-	func () {
+	func() {
 		var err error
 		ecKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(ecKeyStr))
 		if err != nil {

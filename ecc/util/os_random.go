@@ -1,9 +1,9 @@
 package util
 
 import (
-	"sync"
-	"os"
 	"fmt"
+	"os"
+	"sync"
 )
 
 var filename = "/dev/urandom"
@@ -20,15 +20,15 @@ func NextBytes(bytes []byte) {
 	off := int64(0)
 	for off < int64(len(bytes)) {
 		fillInReservoir()
-		toFill := min(int64(len(bytes)) - off, int64(len(reservoir)) - pos)
+		toFill := min(int64(len(bytes))-off, int64(len(reservoir))-pos)
 		fmt.Printf("tofill: %d, len: %d, off: %d, lenr: %d, pos :%d, minus1 :%d, minus2: %d\n",
-			toFill, int64(len(bytes)), off, int64(len(reservoir)), pos, int64(len(bytes)) - off, int64(len(reservoir)) - pos)
+			toFill, int64(len(bytes)), off, int64(len(reservoir)), pos, int64(len(bytes))-off, int64(len(reservoir))-pos)
 		copy(bytes[off:], reservoir[pos:pos+toFill])
 		off += toFill
 		pos += toFill
 		fmt.Printf("bytes: %x\n", bytes)
 		fmt.Printf("tofill: %d, len: %d, off: %d, lenr: %d, pos :%d, minus1 :%d, minus2: %d\n",
-			toFill, int64(len(bytes)), off, int64(len(reservoir)), pos, int64(len(bytes)) - off, int64(len(reservoir)) - pos)
+			toFill, int64(len(bytes)), off, int64(len(reservoir)), pos, int64(len(bytes))-off, int64(len(reservoir))-pos)
 	}
 }
 

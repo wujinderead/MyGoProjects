@@ -27,40 +27,40 @@ func (curve *F2mCurve) addProjective(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int,
 		return x3, y3, z3
 	}
 
-	y1z2 := curve.gmul(y1, z2)        // Y1Z2 = Y1*Z2
-	x1z2 := curve.gmul(x1, z2)        // X1Z2 = X1*Z2
+	y1z2 := curve.gmul(y1, z2) // Y1Z2 = Y1*Z2
+	x1z2 := curve.gmul(x1, z2) // X1Z2 = X1*Z2
 
 	A := curve.gmul(z1, y2)
-	curve.gaddSelf(A, y1z2)           // A = Y1Z2+Z1*Y2
+	curve.gaddSelf(A, y1z2) // A = Y1Z2+Z1*Y2
 
 	B := curve.gmul(z1, x2)
-	curve.gaddSelf(B, x1z2)           // B = X1Z2+Z1*X2
+	curve.gaddSelf(B, x1z2) // B = X1Z2+Z1*X2
 
-	if A.Sign()==0 && B.Sign()==0 {   // A=B=0 means adding two same point
+	if A.Sign() == 0 && B.Sign() == 0 { // A=B=0 means adding two same point
 		return curve.doubleProjective(x1, y1, z1)
 	}
 
-	AB := curve.gadd(A, B)            // AB = A+B
-	C := curve.gmul(B, B)             // C = B²
-	D := curve.gmul(z1, z2)           // D = Z1*Z2
-	E := curve.gmul(B, C)             // E = B*C
+	AB := curve.gadd(A, B)  // AB = A+B
+	C := curve.gmul(B, B)   // C = B²
+	D := curve.gmul(z1, z2) // D = Z1*Z2
+	E := curve.gmul(B, C)   // E = B*C
 
 	tmp := curve.gmul(A, AB)
 	F := curve.gmul(curve.A, C)
 	curve.gaddSelf(F, tmp)
 	F = curve.gmul(F, D)
-	curve.gaddSelf(F, E)              // F = (A*AB+a2*C)*D+E
+	curve.gaddSelf(F, E) // F = (A*AB+a2*C)*D+E
 
-	x3 = curve.gmul(B, F)             // X3 = B*F
+	x3 = curve.gmul(B, F) // X3 = B*F
 
 	tmp = curve.gmul(A, x1z2)
 	y3 = curve.gmul(B, y1z2)
 	curve.gaddSelf(y3, tmp)
 	y3 = curve.gmul(y3, C)
 	tmp = curve.gmul(AB, F)
-	curve.gaddSelf(y3, tmp)           // Y3 = C*(A*X1Z2+B*Y1Z2)+AB*F
+	curve.gaddSelf(y3, tmp) // Y3 = C*(A*X1Z2+B*Y1Z2)+AB*F
 
-	z3 = curve.gmul(E, D)             // Z3 = E*D
+	z3 = curve.gmul(E, D) // Z3 = E*D
 
 	return x3, y3, z3
 }
@@ -73,21 +73,21 @@ func (curve *F2mCurve) DoubleProjective(point *EcPoint) *EcPoint {
 
 // see http://hyperelliptic.org/EFD/g12o/auto-shortw-projective.html#doubling-dbl-2008-bl
 func (curve *F2mCurve) doubleProjective(x, y, z *big.Int) (*big.Int, *big.Int, *big.Int) {
-	A := curve.gmul(x, x)         // A = X1²
+	A := curve.gmul(x, x) // A = X1²
 	B := curve.gmul(y, z)
-	curve.gaddSelf(B, A)          // B = A+Y1*Z1
-	C := curve.gmul(x, z)         // C = X1*Z1
-	BC := curve.gadd(B, C)        // BC = B+C
-	D := curve.gmul(C, C)         // D = C²
+	curve.gaddSelf(B, A)   // B = A+Y1*Z1
+	C := curve.gmul(x, z)  // C = X1*Z1
+	BC := curve.gadd(B, C) // BC = B+C
+	D := curve.gmul(C, C)  // D = C²
 	tmp := curve.gmul(B, BC)
 	E := curve.gmul(curve.A, D)
-	curve.gaddSelf(E, tmp)        // E = B*BC+a2*D
-	x3 := curve.gmul(C, E)        // X3 = C*E
-	tmp = curve.gmul(BC, E)       
-	y3 := curve.gmul(A, A)        
-	y3 = curve.gmul(y3, C)        
-	curve.gaddSelf(y3, tmp)       // Y3 = BC*E+A²*C
-	z3 := curve.gmul(C, D)        // Z3 = C*D
+	curve.gaddSelf(E, tmp) // E = B*BC+a2*D
+	x3 := curve.gmul(C, E) // X3 = C*E
+	tmp = curve.gmul(BC, E)
+	y3 := curve.gmul(A, A)
+	y3 = curve.gmul(y3, C)
+	curve.gaddSelf(y3, tmp) // Y3 = BC*E+A²*C
+	z3 := curve.gmul(C, D)  // Z3 = C*D
 	return x3, y3, z3
 }
 

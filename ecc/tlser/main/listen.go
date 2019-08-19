@@ -13,7 +13,8 @@ func main() {
 }
 
 func tlsListen() {
-	serverKeypair, err := tls.LoadX509KeyPair("keys/ec.server.crt", "keys/ec.server.key")
+	//serverKeypair, err := tls.LoadX509KeyPair("keys/ec.server.crt", "keys/ec.server.key")
+	serverKeypair, err := tls.LoadX509KeyPair("keys/ed25519.server.crt", "keys/ed25519.server.key")
 	if err != nil {
 		fmt.Println("get key pair err:", err)
 		return

@@ -1,16 +1,16 @@
 package ecc
 
 import (
-	"testing"
-	"fmt"
 	"encoding/hex"
+	"fmt"
+	"testing"
 )
 
 func TestEquation_ShortWProjective_Openssl(t *testing.T) {
 	initEd.Do(initEcCurves)
 	for i, name := range FpCurveNames {
-		_, k1, px1, py1 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
-		_, k2, px2, py2 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
+		_, k1, px1, py1 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
+		_, k2, px2, py2 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
 		curve, err := GetFpCurve(name)
 		if err != nil {
 			t.Errorf("koblitz curve '%s' not esist.\n", name)
@@ -30,8 +30,8 @@ func TestEquation_ShortWProjective_Openssl(t *testing.T) {
 func TestEquation_ShortWJacobian_Openssl(t *testing.T) {
 	initEd.Do(initEcCurves)
 	for i, name := range FpCurveNames {
-		_, k1, px1, py1 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
-		_, k2, px2, py2 := getOpensslEcPrivateKey(name)  // the scalar multiply from of openssl
+		_, k1, px1, py1 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
+		_, k2, px2, py2 := getOpensslEcPrivateKey(name) // the scalar multiply from of openssl
 		curve, err := GetFpCurve(name)
 		if err != nil {
 			t.Errorf("koblitz curve '%s' not esist.\n", name)

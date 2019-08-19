@@ -38,8 +38,8 @@ func TestGf2m_mul(t *testing.T) {
 
 func TestBn_gf2m_mul_sqr(t *testing.T) {
 	rand.Seed(time.Now().Unix())
-	for i:=1; i<=13; i++ {
-		for j:=1; j<=16; j++ {
+	for i := 1; i <= 13; i++ {
+		for j := 1; j <= 16; j++ {
 			a := make([]big.Word, i)
 			b := make([]big.Word, j)
 			fillRandom(a)
@@ -96,7 +96,7 @@ func TestBn_gf2m_mod_inv_vartime(t *testing.T) {
 		curve, _ := GetF2mCurve(name)
 		fmt.Printf("\n%d %s: \n", i, name)
 		p := bn_gf2m_poly2arr(curve.P.Bits())
-		for i:=0; i<10; i++ {
+		for i := 0; i < 10; i++ {
 			rdi := new(big.Int).Rand(rander, curve.P)
 			inv := bn_gf2m_mod_inv_vartime(rdi.Bits(), curve.P.Bits())
 			pro := bn_gf2m_mul(rdi.Bits(), inv)
@@ -115,7 +115,7 @@ func TestBn_numbits(t *testing.T) {
 
 func mulBigInt(a, b *big.Int) *big.Int {
 	re := new(big.Int)
-	for i:=0; i<b.BitLen(); i++ {
+	for i := 0; i < b.BitLen(); i++ {
 		if b.Bit(i) == 1 {
 			re.Xor(re, a)
 		}

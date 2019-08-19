@@ -37,37 +37,37 @@ func (curve *FpCurve) addJacobian(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int, *b
 	u1.Mod(u1, curve.P)
 	u2 := new(big.Int).Mul(x2, z1z1) // U2 = X2*Z1Z1
 	u2.Mod(u2, curve.P)
-	h := new(big.Int).Sub(u2, u1)    // H = U2-U1
+	h := new(big.Int).Sub(u2, u1) // H = U2-U1
 	xEqual := h.Sign() == 0
 	if h.Sign() == -1 {
 		h.Add(h, curve.P)
 	}
 	i := new(big.Int).Lsh(h, 1)
-	i.Mul(i, i)                    // I = (2*H)²
-	j := new(big.Int).Mul(h, i)    // J = H*I
+	i.Mul(i, i)                 // I = (2*H)²
+	j := new(big.Int).Mul(h, i) // J = H*I
 
 	s1 := new(big.Int).Mul(y1, z2)
-	s1.Mul(s1, z2z2)               // S1 = Y1*Z2*Z2Z2
+	s1.Mul(s1, z2z2) // S1 = Y1*Z2*Z2Z2
 	s1.Mod(s1, curve.P)
 	s2 := new(big.Int).Mul(y2, z1)
-	s2.Mul(s2, z1z1)               // S2 = Y2*Z1*Z1Z1
+	s2.Mul(s2, z1z1) // S2 = Y2*Z1*Z1Z1
 	s2.Mod(s2, curve.P)
 	r := new(big.Int).Sub(s2, s1)
 	if r.Sign() == -1 {
 		r.Add(r, curve.P)
 	}
 	yEqual := r.Sign() == 0
-	if xEqual && yEqual {          // H=r=0 means adding two same point
+	if xEqual && yEqual { // H=r=0 means adding two same point
 		return curve.doubleJacobian(x1, y1, z1)
 	}
-	r.Lsh(r, 1)                    // r = 2*(S2-S1)
-	v := new(big.Int).Mul(u1, i)   // V = U1*I
+	r.Lsh(r, 1)                  // r = 2*(S2-S1)
+	v := new(big.Int).Mul(u1, i) // V = U1*I
 
 	x3.Set(r)
 	x3.Mul(x3, x3)
 	x3.Sub(x3, j)
 	x3.Sub(x3, v)
-	x3.Sub(x3, v)         // X3 = r²-J-2*V
+	x3.Sub(x3, v) // X3 = r²-J-2*V
 	x3.Mod(x3, curve.P)
 
 	y3.Set(r)
@@ -75,14 +75,14 @@ func (curve *FpCurve) addJacobian(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int, *b
 	y3.Mul(y3, v)
 	s1.Mul(s1, j)
 	s1.Lsh(s1, 1)
-	y3.Sub(y3, s1)        // Y3 = r*(V-X3)-2*S1*J
+	y3.Sub(y3, s1) // Y3 = r*(V-X3)-2*S1*J
 	y3.Mod(y3, curve.P)
 
 	z3.Add(z1, z2)
 	z3.Mul(z3, z3)
 	z3.Sub(z3, z1z1)
 	z3.Sub(z3, z2z2)
-	z3.Mul(z3, h)         // Z3 = ((Z1+Z2)²-Z1Z1-Z2Z2)*H
+	z3.Mul(z3, h) // Z3 = ((Z1+Z2)²-Z1Z1-Z2Z2)*H
 	z3.Mod(z3, curve.P)
 
 	return x3, y3, z3
@@ -96,31 +96,31 @@ func (curve *FpCurve) DoubleJacobian(point *EcPoint) *EcPoint {
 
 // see https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html#doubling-dbl-2007-bl
 func (curve *FpCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, *big.Int) {
-	XX := new(big.Int).Mul(x, x)      // XX = X1²
-	YY := new(big.Int).Mul(y, y)      // YY = Y1²
-	ZZ := new(big.Int).Mul(z, z)      // ZZ = Z1²
-	YYYY := new(big.Int).Mul(YY, YY)  // YYYY = YY²
+	XX := new(big.Int).Mul(x, x)     // XX = X1²
+	YY := new(big.Int).Mul(y, y)     // YY = Y1²
+	ZZ := new(big.Int).Mul(z, z)     // ZZ = Z1²
+	YYYY := new(big.Int).Mul(YY, YY) // YYYY = YY²
 	M := new(big.Int).Mul(ZZ, ZZ)
 	M.Mul(M, curve.A)
 	M.Add(M, XX)
 	M.Add(M, XX)
-	M.Add(M, XX)                      // M = 3*XX+a*ZZ²
+	M.Add(M, XX) // M = 3*XX+a*ZZ²
 	S := new(big.Int).Mul(x, YY)
-	S.Lsh(S, 2)                       // S = 4*X1*YY
+	S.Lsh(S, 2) // S = 4*X1*YY
 
 	x3 := new(big.Int).Mul(M, M)
 	x3.Sub(x3, S)
-	x3.Sub(x3, S)                     // X3 = T = M²-2*S
+	x3.Sub(x3, S) // X3 = T = M²-2*S
 	x3.Mod(x3, curve.P)
 
 	y3 := new(big.Int).Lsh(YYYY, 3)
 	S.Sub(S, x3)
 	S.Mul(S, M)
-	y3.Sub(S, y3)                     // Y3 = M*(S-T)-8*YYYY
+	y3.Sub(S, y3) // Y3 = M*(S-T)-8*YYYY
 	y3.Mod(y3, curve.P)
 
 	z3 := new(big.Int).Mul(y, z)
-	z3.Lsh(z3, 1)                     // Z3 = 2*Y1*Z1
+	z3.Lsh(z3, 1) // Z3 = 2*Y1*Z1
 	z3.Mod(z3, curve.P)
 	return x3, y3, z3
 }
@@ -146,7 +146,6 @@ func (curve *FpCurve) ScalaMultJacobian(point *EcPoint, k []byte) *EcPoint {
 func (curve *FpCurve) ScalaMultBaseJacobian(k []byte) *EcPoint {
 	return curve.ScalaMultJacobian(&EcPoint{curve.X, curve.Y}, k)
 }
-
 
 func (curve *FpCurve) affineFromJacobian(x, y, z *big.Int) *EcPoint {
 	if z.Sign() == 0 {

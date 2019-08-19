@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"testing"
-	"encoding/hex"
 )
 
 func TestDockerKey(t *testing.T) {

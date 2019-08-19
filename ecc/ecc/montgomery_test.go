@@ -1,10 +1,10 @@
 package ecc
 
 import (
+	"crypto/rand"
 	"fmt"
 	"math/big"
 	"testing"
-	"crypto/rand"
 )
 
 func TestMtCurve_IsOnCurve(t *testing.T) {
@@ -82,27 +82,27 @@ func TestMtCurve_doubleProjective_diffAddprojective(t *testing.T) {
 		for _, x5args := range [][]*big.Int{
 			{x1, z1, x2, z2, x3, z3},
 			{x1, z1, x3, z3, x2, z2}} {
-				x5, z5 := curve.diffAddProjective(x5args[0], x5args[1], x5args[2], x5args[3], x5args[4], x5args[5])
-				X5 := curve.affineFromProjectiveX(x5, z5)
-				fmt.Println("x5z5: ", x5.Text(16), z5.Text(16))
-				fmt.Println(p5.X.Cmp(X5))
-				for _, x6args := range [][]*big.Int{
-					{x2, z2, x4, z4, x2, z2},
-					{x4, z4, x5, z5, x1, z1}} {
-						x6, z6 := curve.diffAddProjective(x6args[0], x6args[1], x6args[2], x6args[3], x6args[4], x6args[5])
-						X6 := curve.affineFromProjectiveX(x6, z6)
-						fmt.Println("x6z6: ", x6.Text(16), z6.Text(16))
-						fmt.Println(p6.X.Cmp(X6))
-						for _, x7args := range [][]*big.Int{
-							{x1, z1, x4, z4, x3, z3},
-							{x3, z3, x5, z5, x2, z2},
-							{x5, z5, x1, z1, x6, z6}} {
-								x7, z7 := curve.diffAddProjective(x7args[0], x7args[1], x7args[2], x7args[3], x7args[4], x7args[5])
-								X7 := curve.affineFromProjectiveX(x7, z7)
-								fmt.Println("x7z7: ", x7.Text(16), z7.Text(16))
-								fmt.Println(p7.X.Cmp(X7))
-						}
+			x5, z5 := curve.diffAddProjective(x5args[0], x5args[1], x5args[2], x5args[3], x5args[4], x5args[5])
+			X5 := curve.affineFromProjectiveX(x5, z5)
+			fmt.Println("x5z5: ", x5.Text(16), z5.Text(16))
+			fmt.Println(p5.X.Cmp(X5))
+			for _, x6args := range [][]*big.Int{
+				{x2, z2, x4, z4, x2, z2},
+				{x4, z4, x5, z5, x1, z1}} {
+				x6, z6 := curve.diffAddProjective(x6args[0], x6args[1], x6args[2], x6args[3], x6args[4], x6args[5])
+				X6 := curve.affineFromProjectiveX(x6, z6)
+				fmt.Println("x6z6: ", x6.Text(16), z6.Text(16))
+				fmt.Println(p6.X.Cmp(X6))
+				for _, x7args := range [][]*big.Int{
+					{x1, z1, x4, z4, x3, z3},
+					{x3, z3, x5, z5, x2, z2},
+					{x5, z5, x1, z1, x6, z6}} {
+					x7, z7 := curve.diffAddProjective(x7args[0], x7args[1], x7args[2], x7args[3], x7args[4], x7args[5])
+					X7 := curve.affineFromProjectiveX(x7, z7)
+					fmt.Println("x7z7: ", x7.Text(16), z7.Text(16))
+					fmt.Println(p7.X.Cmp(X7))
 				}
+			}
 		}
 	}
 }
@@ -112,9 +112,9 @@ func TestMtCurve_ScalaMultProjective(t *testing.T) {
 	reader := rand.Reader
 	for _, curve := range []*MtCurve{curve25519, m221, m383, curve383187, m511, curve448} {
 		fmt.Println("\n", curve.Name, ":")
-		size := (curve.P.BitLen()-8)/8
+		size := (curve.P.BitLen() - 8) / 8
 		byter := make([]byte, size)
-		for i:=0; i<10; i++ {
+		for i := 0; i < 10; i++ {
 			reader.Read(byter)
 			p := curve.ScalaMultBase(byter)
 			pp := curve.ScalaMultBaseProjective(byter)

@@ -5,7 +5,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/sha512"
-	"ecc"
+	"ecc/ecc"
 	"encoding/hex"
 	"fmt"
 	"github.com/stretchr/testify/assert"

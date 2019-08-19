@@ -1,13 +1,13 @@
 package cipher
 
 import (
-	"testing"
 	"crypto/dsa"
 	"crypto/rand"
-	"fmt"
 	"crypto/sha256"
+	"fmt"
 	"io"
 	"math/big"
+	"testing"
 )
 
 func Test_dsaSign(t *testing.T) {
