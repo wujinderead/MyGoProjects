@@ -5,12 +5,13 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"ecc/ecc"
+	"ecc/util/edwards25519"
 	"encoding/hex"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/ed25519"
-	"reflect"
+	"math/big"
 	"testing"
 )
 
@@ -103,23 +104,115 @@ func TestX25519Rfc7748DiffieHellman(t *testing.T) {
 
 func TestEd25519(t *testing.T) {
 	reader := rand.Reader
-	/*pub, priv, err := ed25519.GenerateKey(reader)
-	if err != nil {
-		fmt.Println("genkey err: ", err.Error())
-	}*/
-	pub, err := hex.DecodeString("206d3b36a46545d00fd417375df871f546de840cf1e1fb6ea055358cf92949e2")
-	priv, err := hex.DecodeString("86ce3bc7c2bd0be6b71bf9eb9bc6a9acdb97ad7f5aaf7ca2fcfadbbf7be2f216206d3b36a46545d00fd417375df871f546de840cf1e1fb6ea055358cf92949e2")
-	fmt.Println(reflect.TypeOf(pub).Kind().String())
-	fmt.Println(reflect.TypeOf(priv).Kind().String())
-	fmt.Printf("pub: %x\n", []byte(pub))
-	fmt.Printf("priv: %x\n", []byte(priv))
-	msg := []byte("wang sheng tao.")
-	sign, err := ed25519.PrivateKey(priv).Sign(reader, msg, crypto.Hash(0))
-	if err != nil {
-		fmt.Println("sign err: ", err.Error())
-	}
+	seed, _ := hex.DecodeString("5c747028926820d3669df3c3ee7c04818ea44c3f9b79430a97bf6b3efeba86c6")
+	pubex, _ := hex.DecodeString("0479a40adbb1703c07a9e301ce8ca1074350634949c67e4df651e21d3c9bc5cd")
+	priv := ed25519.NewKeyFromSeed(seed)
+	pub := priv.Public().(ed25519.PublicKey)
+	assert.Equal(t, []byte(pub), pubex, "pub key equal")
+	assert.Equal(t, []byte(priv[:ed25519.SeedSize]), seed, "priv is actually seed")
+
+	msg := []byte("The quick brown fox jumps over the lazy dog.")
+
+	// ed25519 sign and verify
+	// rand.Reader is unused, so ed25519 generates the same signature for same message
+	sign, _ := ed25519.PrivateKey(priv).Sign(reader, msg, crypto.Hash(0))
 	fmt.Printf("sign: %x\n", sign)
 	fmt.Println(ed25519.Verify(ed25519.PublicKey(pub), msg, sign))
+
+	// generate ed25519 signature manually by following the procedure in ed25519 package
+	// sha512 to digest seed
+	h := sha512.New()
+	h.Write(seed)
+	digest := h.Sum(nil)
+
+	// part seed digest to 2 parts
+	frontDigest := digest[:32]
+	backDigest := digest[32:]
+
+	// use frontDigest as secret
+	frontDigest[0] &= 248
+	frontDigest[31] &= 63 // why 63?
+	frontDigest[31] |= 64
+
+	// digest (backDigest + message) as md
+	h.Reset()
+	h.Write(backDigest)
+	h.Write(msg)
+	md := h.Sum(nil)
+	// convert md to a number, then reduce it within ed25519 prime order (l = 2^252 + 27742317777372353535851937790883648493)
+	mdn := new(big.Int).SetBytes(reverse(md))
+	mdn.Mod(mdn, ecc.Ed25519().Order)
+	// scala multiply md with base point, generate R
+	R := ecc.Ed25519().ScalaMultBaseProjective(mdn.Bytes())
+	// encode R
+	encodedR := ed25519Encode(R)
+	fmt.Printf("R: %x\n", encodedR)
+
+	// digest (encodeR + publicKey + message) as hram
+	h.Reset()
+	h.Write(encodedR[:])
+	h.Write(pub)
+	h.Write(msg)
+	hram := h.Sum(nil)
+	// convert hram to number and reduce
+	hramn := new(big.Int).SetBytes(reverse(hram))
+	hramn.Mod(hramn, ecc.Ed25519().Order)
+
+	// compute s as (hramn * secret + mdn) mod l
+	secret := new(big.Int).SetBytes(reverse(frontDigest))
+	s := new(big.Int).Mul(secret, hramn)
+	s.Add(s, mdn)
+	s.Mod(s, ecc.Ed25519().Order)
+	fmt.Printf("s: %x\n", reverse(s.Bytes()))
+}
+
+// reference procedure of Sign in 'golang.org/x/crypto/curve25519'
+func TestEd25519SignReference(t *testing.T) {
+	seed, _ := hex.DecodeString("5c747028926820d3669df3c3ee7c04818ea44c3f9b79430a97bf6b3efeba86c6")
+	privateKey := ed25519.NewKeyFromSeed(seed)
+
+	message := []byte("The quick brown fox jumps over the lazy dog.")
+
+	h := sha512.New()
+	h.Write(privateKey[:32])
+
+	var digest1, messageDigest, hramDigest [64]byte
+	var expandedSecretKey [32]byte
+	h.Sum(digest1[:0])
+	copy(expandedSecretKey[:], digest1[:])
+	expandedSecretKey[0] &= 248
+	expandedSecretKey[31] &= 63
+	expandedSecretKey[31] |= 64
+
+	h.Reset()
+	h.Write(digest1[32:])
+	h.Write(message)
+	h.Sum(messageDigest[:0])
+
+	var messageDigestReduced [32]byte
+	edwards25519.ScReduce(&messageDigestReduced, &messageDigest)
+	var R edwards25519.ExtendedGroupElement
+	edwards25519.GeScalarMultBase(&R, &messageDigestReduced)
+
+	var encodedR [32]byte
+	R.ToBytes(&encodedR)
+	fmt.Println("R:", hex.EncodeToString(encodedR[:]))
+
+	h.Reset()
+	h.Write(encodedR[:])
+	h.Write(privateKey[32:])
+	h.Write(message)
+	h.Sum(hramDigest[:0])
+	var hramDigestReduced [32]byte
+	edwards25519.ScReduce(&hramDigestReduced, &hramDigest)
+
+	var s [32]byte
+	edwards25519.ScMulAdd(&s, &hramDigestReduced, &expandedSecretKey, &messageDigestReduced)
+	fmt.Println("s:", hex.EncodeToString(s[:]))
+
+	signature := make([]byte, 64)
+	copy(signature[:], encodedR[:])
+	copy(signature[32:], s[:])
 }
 
 func TestEd25519GenerateKey(t *testing.T) {
@@ -132,27 +225,22 @@ func TestEd25519GenerateKey(t *testing.T) {
 	fmt.Println("pubK:", hex.EncodeToString(privKey[32:]))
 
 	// re-perform a key generate process
+	// sha512 to digest the seed
 	h := sha512.New()
 	h.Write(seed[:])
 	digest := h.Sum(nil)
 
+	// use front 32 bytes of the digest as the real secret key
 	var priK = digest[:32]
-	priK[0] &= 248
-	priK[31] &= 127
-	priK[31] |= 64
-	pubPoint := ecc.Ed25519().ScalaMultBaseProjective(reverse(priK))
-	y := reverse(pubPoint.Y.Bytes())
-	x := reverse(pubPoint.X.Bytes())
-	fmt.Println("y   :", hex.EncodeToString(y))
-	fmt.Println("x   :", x[0])
-	// copy the least significant bit of pubPoint.X to the most significant bit of pubPoint.Y
-	if x[0]&1 == 1 { // the least significant bit of pubPoint.X is 1
-		y[31] |= 0x80
-	} else {
-		y[31] &= 0x7f
-	}
-	fmt.Println("newy:", hex.EncodeToString(y))
-	assert.Equal(t, y, []byte(privKey[32:]), "public key equal")
+
+	// scala multiply secret key and base point, and generate public key
+	pubPoint := ecc.Ed25519().ScalaMultBaseProjective(reverse(process(priK)))
+
+	// convert the product ec point to ed25519 format,
+	// i.e., copy the least significant bit of point.X to the most significant bit of point.Y
+	eccPub := ed25519Encode(pubPoint)
+	fmt.Println("eccP:", hex.EncodeToString(eccPub))
+	assert.Equal(t, eccPub, []byte(privKey[32:]), "public key equal")
 }
 
 func process(scala []byte) []byte {
@@ -163,6 +251,7 @@ func process(scala []byte) []byte {
 	e[31] |= 64
 	return e
 }
+
 func reverse(b []byte) []byte {
 	a := make([]byte, len(b))
 	copy(a, b)
@@ -170,4 +259,16 @@ func reverse(b []byte) []byte {
 		a[i], a[j] = a[j], a[i]
 	}
 	return a
+}
+
+func ed25519Encode(point *ecc.EcPoint) []byte {
+	y := reverse(point.Y.Bytes())
+	x := reverse(point.X.Bytes())
+	// copy the least significant bit of point.X to the most significant bit of point.Y
+	if x[0]&1 == 1 { // if the least significant bit of point.X is 1
+		y[31] |= 0x80 // set the most significant bit of point.Y to 1
+	} else { // if 0
+		y[31] &= 0x7f // set 0
+	}
+	return y
 }
