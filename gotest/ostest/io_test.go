@@ -79,7 +79,69 @@ func TestIo(t *testing.T) {
 	fmt.Println("Read:", err, n, string(p[:n]))
 	fmt.Println()
 
-	// todo io.copy
+	// Copy
+	buf.resetRead()
+	w := newBuffer(30, "")
+	written, err := io.Copy(w, buf) // copy from read to writer until EOF or error
+	fmt.Println("Copy:", err, written)
+	fmt.Println()
+
+	// CopyN
+	buf.resetRead()
+	w.reset()
+	written, err = io.CopyN(w, buf, 20) // copy from read to writer until enough bytes or error
+	fmt.Println("CopyN:", err, written)
+	fmt.Println()
+
+	// CopyBuffer
+	buf.resetRead()
+	w.reset()
+	p = make([]byte, 10)
+	written, err = io.CopyBuffer(w, buf, p) // like io.Copy but use the provided buffer other than allocating by go
+	fmt.Println("CopyBuffer:", err, written)
+	fmt.Println()
+
+	// TeeReader
+	buf.resetRead()
+	w.reset()
+	tee := io.TeeReader(buf, w) // when read from r, also write to w
+	p = make([]byte, 12)
+	for i := 0; i < 6; i++ {
+		n, err := tee.Read(p)
+		// when w full, return writer error.
+		// however the read can still continue, until reader return EOF.
+		fmt.Println("tee read:", err, n, string(p[:n]))
+		fmt.Println("w buf:", string(w.buf[:w.woff]))
+		fmt.Println("r.roff:", buf.roff)
+	}
+	fmt.Println()
+
+	// MultiReader, MultiWriter
+	r1, r2 := newBuffer(10, "abcdefghij"), newBuffer(10, "klmnopqrst")
+	w1, w2, w3 := newBuffer(30, ""), newBuffer(20, ""), newBuffer(20, "")
+	mr := io.MultiReader(r1, r2)
+	mw := io.MultiWriter(w1, w2, w2)
+	p = make([]byte, 24)
+	n, err = mr.Read(p)
+	fmt.Println("MultiReader:", err, n, string(p))
+	n, err = mr.Read(p[n:])
+	fmt.Println("MultiReader:", err, n, string(p)) // read readers serially until all reader EOF
+
+	n, err = mw.Write(p)                              // write to all writers, if one error, the others won't continue
+	fmt.Println("MultiWriter:", err, n)               // w2 error, return w2's n and err
+	fmt.Println("Writer1:", string(w1.buf[:w1.woff])) // w1 success
+	fmt.Println("Writer2:", string(w2.buf[:w2.woff])) // w2 return err
+	fmt.Println("Writer3:", string(w3.buf[:w3.woff])) // won't continue to write w3
+	fmt.Println()
+}
+
+func TestIo1(t *testing.T) {
+	// Discard
+	r := newBuffer(20, "1234567890")
+	n, err := io.Copy(ioutil.Discard, r) // read from r and discard the content, only the read offset changes
+	fmt.Println("Discard:", err, n)
+
+	// todo test Pipe
 
 }
 
@@ -159,6 +221,23 @@ func (b *buffer) WriteString(str string) (int, error) {
 		return 0, closedErr
 	}
 	return b.Write([]byte(str))
+}
+
+// todo
+func (b *buffer) ReadFrom(r io.Reader) (int64, error) {
+	return 0, nil
+}
+
+func (b *buffer) ReadAt(p []byte, off int64) (int, error) {
+	return 0, nil
+}
+
+func (b *buffer) WriteTo(w io.Writer) (int64, error) {
+	return 0, nil
+}
+
+func (b *buffer) WriteAt(p []byte, off int64) (int, error) {
+	return 0, nil
 }
 
 func min(a, b int) int {
