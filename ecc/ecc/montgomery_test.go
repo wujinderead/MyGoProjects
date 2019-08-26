@@ -9,7 +9,7 @@ import (
 
 func TestMtCurve_IsOnCurve(t *testing.T) {
 	initAllMontgomery()
-	for _, curve := range []*MtCurve{curve25519, m221, m383, curve383187, m511, curve448} {
+	for _, curve := range []*MtCurve{curve25519, m221, m383, m511, curve448} {
 		four := new(big.Int).SetInt64(4)
 		res := new(big.Int)
 		fmt.Println(curve.Name, curve.Pstr, ", p mod 4 =", res.Mod(curve.P, four).String())
@@ -33,7 +33,7 @@ func TestMtCurve_Add(t *testing.T) {
 func TestMtCurve_ScalaMult(t *testing.T) {
 	initAllMontgomery()
 	part := new(big.Int)
-	for _, curve := range []*MtCurve{curve25519, m221, m383, curve383187, m511, curve448} {
+	for _, curve := range []*MtCurve{curve25519, m221, m383, m511, curve448} {
 		fmt.Println("\n", curve.Name, ":")
 		fmt.Println("ba", (&EcPoint{curve.Bx, curve.By}).ToStr())
 		fmt.Printf("P: %x\n", curve.P.Bytes())
@@ -53,7 +53,7 @@ func TestMtCurve_ScalaMult(t *testing.T) {
 
 func TestMtCurve_doubleProjective_diffAddprojective(t *testing.T) {
 	initAllMontgomery()
-	for _, curve := range []*MtCurve{curve25519, m221, m383, curve383187, m511, curve448} {
+	for _, curve := range []*MtCurve{curve25519, m221, m383, m511, curve448} {
 		fmt.Println("\n", curve.Name, ":")
 		p := &EcPoint{curve.Bx, curve.By}
 		fmt.Println("ba:", p.ToStr())
@@ -110,17 +110,50 @@ func TestMtCurve_doubleProjective_diffAddprojective(t *testing.T) {
 func TestMtCurve_ScalaMultProjective(t *testing.T) {
 	initAllMontgomery()
 	reader := rand.Reader
-	for _, curve := range []*MtCurve{curve25519, m221, m383, curve383187, m511, curve448} {
+	for _, curve := range []*MtCurve{curve25519, m221, m383, m511, curve448} {
 		fmt.Println("\n", curve.Name, ":")
 		size := (curve.P.BitLen() - 8) / 8
 		byter := make([]byte, size)
 		for i := 0; i < 10; i++ {
-			reader.Read(byter)
-			p := curve.ScalaMultBase(byter)
-			pp := curve.ScalaMultBaseProjective(byter)
-			fmt.Println(p)
-			fmt.Println(pp)
-			fmt.Println(p.X.Cmp(pp.X), p.Y.Cmp(pp.Y))
+			_, _ = reader.Read(byter)
+			p1 := curve.ScalaMultBase(byter)
+			p2 := curve.nonuniformScalaMultBaseProjective(byter)
+			p3 := curve.ScalaMultBaseProjective(byter)
+			fmt.Println(p1)
+			fmt.Println(p2)
+			fmt.Println(p3)
+			fmt.Println(p1.X.Cmp(p2.X), p1.Y.Cmp(p2.Y))
+			fmt.Println(p1.X.Cmp(p3.X), p1.Y.Cmp(p3.Y))
 		}
+	}
+}
+
+func TestCurve25519Order8(t *testing.T) {
+	c := Curve25519()
+	// x1, x2 has order 8
+	x1, _ := new(big.Int).SetString("325606250916557431795983626356110631294008115727848805560023387167927233504", 10)
+	x2, _ := new(big.Int).SetString("39382357235489614581723060781553021112529911719440698176882885853963445705823", 10)
+	for _, x := range []*big.Int{x1, x2} {
+		// y² = x( x(x+486662) + 1) mod 2²⁵⁵-19
+		y := new(big.Int).Add(x, c.A)
+		y.Mul(y, x)
+		y.Add(y, ONE)
+		y.Mul(y, x)
+		y.Mod(y, c.P)
+		y.ModSqrt(y, c.P)
+		if y == nil {
+			continue
+		}
+		ny := new(big.Int).Sub(c.P, y)
+		fmt.Printf("%x, %x ,%x\n", x.Bytes(), y.Bytes(), ny.Bytes())
+		p1 := &EcPoint{x, y}
+		p2 := &EcPoint{x, ny}
+		fmt.Println(c.IsOnCurve(x, y), c.IsOnCurve(x, ny))
+
+		fmt.Println(c.ScalaMult(p1, []byte{8}))
+		fmt.Println(c.ScalaMultProjective(p1, []byte{8}))
+		fmt.Println(c.ScalaMult(p2, []byte{8}))
+		fmt.Println(c.ScalaMultProjective(p2, []byte{8}))
+		fmt.Println()
 	}
 }

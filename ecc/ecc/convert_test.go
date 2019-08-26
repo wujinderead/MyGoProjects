@@ -19,7 +19,7 @@ func TestReflect(t *testing.T) {
 
 func TestMtCurve_ToEdwardCurve(t *testing.T) {
 	initAllMontgomery()
-	for _, curve := range []*MtCurve{curve25519, m221, m383, curve383187, m511, curve448} {
+	for _, curve := range []*MtCurve{curve25519, m221, m383, m511, curve448} {
 		fmt.Println("MtCurve name: ", curve.Name)
 		toCurve1, _ := reflect.TypeOf(curve).MethodByName("ToEdwardsCurveForm1")
 		toCurve2, _ := reflect.TypeOf(curve).MethodByName("ToEdwardsCurveForm2")
@@ -120,7 +120,7 @@ func TestEdCurve_ToMontgomeryCurve(t *testing.T) {
 
 func TestMtSqrtB(t *testing.T) {
 	initAllMontgomery()
-	for _, curve := range []*MtCurve{curve25519, m221, m383, curve383187, m511, curve448} {
+	for _, curve := range []*MtCurve{curve25519, m221, m383, m511, curve448} {
 		fmt.Println("name: ", curve.Name)
 		a := curve.A.Int64()
 		fmt.Println("curve a: ", a)

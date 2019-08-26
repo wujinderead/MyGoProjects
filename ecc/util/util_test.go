@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"math/big"
 	"math/rand"
 	"sync"
 	"testing"
@@ -55,4 +56,34 @@ func TestRand(t *testing.T) {
 		fmt.Printf("#172.%d.%d.0/24\n", a, b)
 		a += 2
 	}
+}
+
+func TestCswap(t *testing.T) {
+	cswap := func(b byte, x0, x1 *big.Int) {
+		m := ^big.Word(b) + 1 // if b=0, ^b=11111111, ^b+1=0; if b=1, ^b=11111110, ^b+1=11111111
+		v := new(big.Int).Xor(x1, x0)
+		bits := v.Bits() // changing Bits() will modify the big.Int directly
+		for i := range bits {
+			bits[i] = bits[i] & m
+		}
+		x0.Xor(x0, v)
+		x1.Xor(x1, v)
+	}
+	src := rand.New(rand.NewSource(time.Now().UnixNano()))
+	a := new(big.Int).SetInt64(1)
+	a.Lsh(a, 300)
+	b := new(big.Int).SetInt64(1)
+	b.Lsh(b, 100)
+
+	x0, x1 := new(big.Int).Rand(src, a), new(big.Int).Rand(src, b)
+	fmt.Println(x0, x1)
+	cswap(0, x0, x1)
+	fmt.Println(x0, x1)
+	fmt.Println()
+
+	x0, x1 = new(big.Int).Rand(src, a), new(big.Int).Rand(src, b)
+	fmt.Println(x0, x1)
+	cswap(1, x0, x1)
+	fmt.Println(x0, x1)
+	fmt.Println()
 }

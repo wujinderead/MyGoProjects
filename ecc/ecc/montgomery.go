@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	initMt                                              sync.Once
-	curve25519, m221, m383, curve383187, curve448, m511 *MtCurve
+	initMt                                 sync.Once
+	curve25519, m221, m383, curve448, m511 *MtCurve
 )
 
 type MtCurve struct {
@@ -83,23 +83,6 @@ func initM383() {
 	m383.Pstr = "p = 2³⁸³ - 187 = 1 mod 4"
 }
 
-func initCurve383187() {
-	p, _ := new(big.Int).SetString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff45", 16)
-	bx := new(big.Int).SetInt64(5)
-	by, _ := new(big.Int).SetString("1eebe07dc1871896732b12d5504a32370471965c7a11f2c89865f855ab3cbd7c224e3620c31af3370788457dd5ce46df", 16)
-	a := new(big.Int).SetInt64(229969)
-	order, _ := new(big.Int).SetString("1000000000000000000000000000000000000000000000000e85a85287a1488acd41ae84b2b7030446f72088b00a0e21", 16)
-	curve383187 = &MtCurve{}
-	curve383187.P = p
-	curve383187.Bx = bx
-	curve383187.By = by
-	curve383187.A = a
-	curve383187.B = ONE
-	curve383187.Order = order
-	curve383187.Name = "Curve387187"
-	curve383187.Pstr = "p = 2³⁸³ - 187 = 1 mod 4"
-}
-
 func initM511() {
 	p, _ := new(big.Int).SetString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff45", 16)
 	bx := new(big.Int).SetInt64(5)
@@ -136,7 +119,6 @@ func initCurve448() {
 
 func initAllMontgomery() {
 	initCurve25519()
-	initCurve383187()
 	initM221()
 	initM383()
 	initM511()
@@ -156,11 +138,6 @@ func M221() *MtCurve {
 func M383() *MtCurve {
 	initMt.Do(initAllMontgomery)
 	return m383
-}
-
-func Curve383187() *MtCurve {
-	initMt.Do(initAllMontgomery)
-	return curve383187
 }
 
 func M511() *MtCurve {
@@ -246,20 +223,20 @@ func (curve *MtCurve) ScalaMultBase(k []byte) *EcPoint {
 	return curve.ScalaMult(&EcPoint{curve.Bx, curve.By}, k)
 }
 
-/*
-	// use montgomery ladder to perform scalar multiply
-  	R0 ← 0
-  	R1 ← P
-  	for i from m downto 0 do
-    	if di = 0 then
-        	R1 ← point_add(R0, R1)
-        	R0 ← point_double(R0)
-		else
-        	R0 ← point_add(R0, R1)
-        	R1 ← point_double(R1)
-  	return R0
-*/
-func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *EcPoint {
+//	use montgomery ladder to perform scalar multiply:
+//  input point P and scalar k (m bits), return the scalar multiplication product kP
+//
+//  R0 ← 0
+//  R1 ← P
+//  for i from m-1 downto 0 do
+//   	if ki = 0 then
+//       	R1 ← point_add(R0, R1)
+//       	R0 ← point_double(R0)
+//		else
+//       	R0 ← point_add(R0, R1)
+//       	R1 ← point_double(R1)
+//  return R0
+func (curve *MtCurve) nonuniformScalaMultProjective(p *EcPoint, k []byte) *EcPoint {
 	x, y, z := p.X, p.Y, zForAffine(p.X, p.Y)
 	x0, z0 := new(big.Int), new(big.Int)
 	x1, z1 := new(big.Int).Set(p.X), zForAffine(p.X, p.Y)
@@ -279,18 +256,93 @@ func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *EcPoint {
 	return curve.affineFromProjective(x, y, z)
 }
 
-/*
-	Give point P(xP, yP), through montgomery ladder, we can get scalar multiplication product of
-	kP = (Xₖ, Zₖ) and (k+1)P = (Xₖ₊₁, Zₖ₊₁) in projective coordinates. One can compute the y-coordinate of Q,
-	if (xP : yP : 1) = P , (XQ : ZQ) = x(Q), and (X⊕ : Z⊕) = x(P⊕Q) are known. Note that (k+1)P = kP + P,
-	so we can recover the y-coordinate of the scalar multiplication result.
-	Algorithm 5 in "Montgomery curves and their arithmetic: The case of large characteristic fields".
-	The parameters of this function:
-		xP, yP: the affine coordinate of point P
-		Xq, Zq: the projective coordinate of kP
-		Xa, Za: the projective coordinate of (k+1)P
-	return (X', Y', Z'), the new projective coordinates of kP
-*/
+//  uniformed montgomery ladder, use constant-time conditional swap other than using 'if else'.
+//  furthermore, the add and double functions contain some common intermediate results,
+//  so they shouldn't called separately but merged.
+//
+//  input scalar k (l bits, l-1 to 0) and point P, return the scalar multiplication product kP
+//  x2, z2 = 1, 0      // initial as O (infinite point)
+//  x3, z3 = P.X, 1    // initial as P
+//  for i = l−1 down to 0 do
+//  	cswap(k(i+1)^k(i), x2, x3)             // k(i) is the i-th bit of scalar k
+//  	x2, x3 = double(x2), add(x2, x3)
+//  cswap(k(0), x2, x3)
+//  return x2
+func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *EcPoint {
+	x1 := new(big.Int).Set(p.X)                                  // x1=p.X, z1=1; x1 is the difference, is always p
+	x2, z2 := new(big.Int).SetInt64(1), new(big.Int).SetInt64(0) // x2 initial as O
+	x3, z3 := new(big.Int).Set(p.X), zForAffine(p.X, p.Y)        // x3 initial as P
+	a24 := new(big.Int).SetInt64((curve.A.Int64() - 2) / 4)
+	var m byte = 0 // initial former bit as 0
+	for _, b := range k {
+		for i := 0; i < 8; i++ {
+			ki := (b & 0x80) >> 7 // current bit
+			m ^= ki               // the swap argument is current_bit xor former_bit
+			cswap(m, x2, x3)
+			cswap(m, z2, z3) // conditional swap x2, x3
+			m = ki           // set to current bit; in next loop, it become former bit
+
+			A := new(big.Int).Add(x2, z2)
+			AA := new(big.Int).Mul(A, A)
+			B := new(big.Int).Sub(x2, z2)
+			BB := new(big.Int).Mul(B, B)
+			E := new(big.Int).Sub(AA, BB)
+			C := new(big.Int).Add(x3, z3)
+			D := new(big.Int).Sub(x3, z3)
+			DA := new(big.Int).Mul(D, A)
+			CB := new(big.Int).Mul(C, B)
+
+			x3.Add(DA, CB)
+			x3.Mul(x3, x3)
+			x3.Mod(x3, curve.P) // x3 = z1*(DA+CB)², z1 is always 1
+
+			z3.Sub(DA, CB)
+			z3.Mul(z3, z3)
+			z3.Mul(z3, x1)
+			z3.Mod(z3, curve.P) // z3 = x1*(DA-CB)²
+
+			x2.Mul(AA, BB)
+			x2.Mod(x2, curve.P) // x2 = AA*BB
+
+			z2.Mul(a24, E)
+			z2.Add(z2, AA)
+			z2.Mul(z2, E)
+			z2.Mod(z2, curve.P) // z2 = E*(AA+a24*E)
+			b <<= 1
+		}
+	}
+	cswap(m, x2, x3)
+	cswap(m, z2, z3)
+	x, y, z := curve.recoverY(p.X, p.Y, x2, z2, x3, z3)
+	return curve.affineFromProjective(x, y, z)
+}
+
+// constant-time conditional swap, i.e., if b==1, swap two numbers, if b==0, do not swap.
+//    m = mask(b)                   // mask() generate all-0 or all-1 bits according to b
+//    v = m and (x0 xor x1)
+//    x0 = x0 xor v
+//    x1 = x1 xor v
+func cswap(b byte, x0, x1 *big.Int) {
+	m := ^big.Word(b) + 1 // if b=0, ^b=11111111, ^b+1=0; if b=1, ^b=11111110, ^b+1=11111111
+	v := new(big.Int).Xor(x1, x0)
+	bits := v.Bits() // changing Bits() will modify the big.Int directly
+	for i := range bits {
+		bits[i] = bits[i] & m
+	}
+	x0.Xor(x0, v)
+	x1.Xor(x1, v)
+}
+
+//  Give point P(xP, yP), through montgomery ladder, we can get scalar multiplication product of
+//  kP = (Xₖ, Zₖ) and (k+1)P = (Xₖ₊₁, Zₖ₊₁) in projective coordinates. One can compute the y-coordinate of Q,
+//  if (xP : yP : 1) = P , (XQ : ZQ) = x(Q), and (X⊕ : Z⊕) = x(P⊕Q) are known. Note that (k+1)P = kP + P,
+//  so we can recover the y-coordinate of the scalar multiplication result.
+//  Algorithm 5 in "Montgomery curves and their arithmetic: The case of large characteristic fields".
+//  The parameters of this function:
+//     xP, yP: the affine coordinate of point P
+//     Xq, Zq: the projective coordinate of kP
+//     Xa, Za: the projective coordinate of (k+1)P
+//  return (X', Y', Z'), the new projective coordinates of kP
 func (curve *MtCurve) recoverY(xP, yP, Xq, Zq, Xa, Za *big.Int) (X, Y, Z *big.Int) {
 	v1 := new(big.Int).Mul(xP, Zq)
 	v2 := new(big.Int).Add(Xq, v1)
@@ -321,6 +373,10 @@ func (curve *MtCurve) recoverY(xP, yP, Xq, Zq, Xa, Za *big.Int) (X, Y, Z *big.In
 
 func (curve *MtCurve) ScalaMultBaseProjective(k []byte) *EcPoint {
 	return curve.ScalaMultProjective(&EcPoint{curve.Bx, curve.By}, k)
+}
+
+func (curve *MtCurve) nonuniformScalaMultBaseProjective(k []byte) *EcPoint {
+	return curve.nonuniformScalaMultProjective(&EcPoint{curve.Bx, curve.By}, k)
 }
 
 func (curve *MtCurve) affineFromProjectiveX(x, z *big.Int) (xOut *big.Int) {
