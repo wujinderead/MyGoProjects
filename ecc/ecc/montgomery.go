@@ -317,6 +317,57 @@ func (curve *MtCurve) ScalaMultProjective(p *EcPoint, k []byte) *EcPoint {
 	return curve.affineFromProjective(x, y, z)
 }
 
+// input and output only x coordinate
+func (curve *MtCurve) ScalaMultProjectiveU(x1 *big.Int, k []byte) (x *big.Int) {
+	x2, z2 := new(big.Int).SetInt64(1), new(big.Int).SetInt64(0) // x2 initial as O
+	x3, z3 := new(big.Int).Set(x1), zForAffine(x1, x1)           // x3 initial as P
+	a24 := new(big.Int).SetInt64((curve.A.Int64() - 2) / 4)
+	var m byte = 0 // initial former bit as 0
+	for _, b := range k {
+		for i := 0; i < 8; i++ {
+			ki := (b & 0x80) >> 7 // current bit
+			m ^= ki               // the swap argument is current_bit xor former_bit
+			cswap(m, x2, x3)
+			cswap(m, z2, z3) // conditional swap x2, x3
+			m = ki           // set to current bit; in next loop, it become former bit
+			A := new(big.Int).Add(x2, z2)
+			AA := new(big.Int).Mul(A, A)
+			B := new(big.Int).Sub(x2, z2)
+			BB := new(big.Int).Mul(B, B)
+			E := new(big.Int).Sub(AA, BB)
+			C := new(big.Int).Add(x3, z3)
+			D := new(big.Int).Sub(x3, z3)
+			DA := new(big.Int).Mul(D, A)
+			CB := new(big.Int).Mul(C, B)
+			x3.Add(DA, CB)
+			x3.Mul(x3, x3)
+			x3.Mod(x3, curve.P) // x3 = z1*(DA+CB)², z1 is always 1
+			z3.Sub(DA, CB)
+			z3.Mul(z3, z3)
+			z3.Mul(z3, x1)
+			z3.Mod(z3, curve.P) // z3 = x1*(DA-CB)²
+			x2.Mul(AA, BB)
+			x2.Mod(x2, curve.P) // x2 = AA*BB
+			z2.Mul(a24, E)
+			z2.Add(z2, AA)
+			z2.Mul(z2, E)
+			z2.Mod(z2, curve.P) // z2 = E*(AA+a24*E)
+			b <<= 1
+		}
+	}
+	cswap(m, x2, x3)
+	cswap(m, z2, z3)
+
+	// convert projective coordinate x2/z2 to affine coordinate
+	if z2.Sign() == 0 {
+		return new(big.Int)
+	}
+	z2.ModInverse(z2, curve.P)
+	x2.Mul(x2, z2)
+	x2.Mod(x2, curve.P)
+	return x2
+}
+
 // constant-time conditional swap, i.e., if b==1, swap two numbers, if b==0, do not swap.
 //    m = mask(b)                   // mask() generate all-0 or all-1 bits according to b
 //    v = m and (x0 xor x1)
