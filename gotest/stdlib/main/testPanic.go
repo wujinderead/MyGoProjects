@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 )
 
 func main() {
@@ -10,7 +11,7 @@ func main() {
 	//testGoroutinePanic()
 	//testTwice()
 	//testCantRecover()
-	testRecoverOuter()
+	testBothDefer()
 }
 
 func testPanic() {
@@ -114,15 +115,22 @@ func testCantRecover() {
 	panic("a")
 }
 
-func testRecoverOuter() {
+func testBothDefer() {
 	defer func() {
-		if i := recover(); i != nil {
-			fmt.Println("recover:", i.(string))
-		}
+		fmt.Println("main defer")
 	}()
-	inner()
-}
-
-func inner() {
-	panic("a")
+	go func() {
+		defer func() {
+			fmt.Println("inner defer")
+		}()
+		time.Sleep(10 * time.Millisecond)
+		// panic in goroutine makes the whole process exit.
+		// only the panic goroutine's defer func will be executed,
+		// other goroutines' defer (including main routine) won't be executed
+		panic("go1 panic")
+	}()
+	var a int
+	for {
+		a++
+	}
 }

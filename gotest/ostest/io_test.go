@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"sync"
 	"testing"
+	"time"
 )
 
 const maxread = 12
@@ -141,8 +143,38 @@ func TestIo1(t *testing.T) {
 	n, err := io.Copy(ioutil.Discard, r) // read from r and discard the content, only the read offset changes
 	fmt.Println("Discard:", err, n)
 
-	// todo test Pipe
-
+	// Pipe
+	pr, pw := io.Pipe()
+	// pipe are like channels, there can be multiple reader and writer concurrently,
+	// reader will block when nothing to read, writer will block until all its content are read
+	var wg sync.WaitGroup
+	wg.Add(4)
+	go func() {
+		p := make([]byte, 8)
+		n, err := pr.Read(p)
+		fmt.Println("pr1 read:", err, n, string(p[:n]))
+		wg.Done()
+	}()
+	go func() {
+		p := make([]byte, 6)
+		n, err := pr.Read(p)
+		fmt.Println("pr2 read:", err, n, string(p[:n]))
+		wg.Done()
+	}()
+	go func() {
+		time.Sleep(2 * time.Second)
+		p := make([]byte, 8)
+		n, err := pr.Read(p)
+		fmt.Println("pr3 read:", err, n, string(p[:n]))
+		wg.Done()
+	}()
+	go func() {
+		time.Sleep(time.Second)
+		n, err := pw.Write([]byte("1234567890qwertyuiop"))
+		fmt.Println("pw write:", err, n)
+		wg.Done()
+	}()
+	wg.Wait()
 }
 
 func newBuffer(size int, init string) *buffer {
@@ -221,23 +253,6 @@ func (b *buffer) WriteString(str string) (int, error) {
 		return 0, closedErr
 	}
 	return b.Write([]byte(str))
-}
-
-// todo
-func (b *buffer) ReadFrom(r io.Reader) (int64, error) {
-	return 0, nil
-}
-
-func (b *buffer) ReadAt(p []byte, off int64) (int, error) {
-	return 0, nil
-}
-
-func (b *buffer) WriteTo(w io.Writer) (int64, error) {
-	return 0, nil
-}
-
-func (b *buffer) WriteAt(p []byte, off int64) (int, error) {
-	return 0, nil
 }
 
 func min(a, b int) int {
