@@ -1,15 +1,18 @@
 package main
 
 import (
+	"encoding/base64"
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 )
 
 func main() {
 	//testHandleServe()
-	testNotFoundTimeout()
+	//testNotFoundTimeout()
+	testBasicAuth()
 }
 
 func testHandleServe() {
@@ -67,6 +70,34 @@ func testNotFoundTimeout() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func testProxy() {
-	http.ProxyFromEnvironment()
+func testBasicAuth() {
+	http.Handle("/login", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		basicAuth := r.Header.Get("Authorization")
+		if len(basicAuth) < 6 || basicAuth[:6] != "Basic " {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte("malformed authorization"))
+			return
+		}
+		log.Println("auth:", basicAuth)
+		userpass, err := base64.URLEncoding.DecodeString(basicAuth[6:])
+		log.Println(string(userpass))
+		if err != nil {
+			log.Println("base64 decode err:", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte("malformed authorization"))
+			return
+		}
+		uap := strings.Split(string(userpass), ":")
+		if uap[0] != "lige" || uap[1] != "lige123" { // manipulate wrong password
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte("invalid authorization"))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("login success"))
+		return
+	}))
+	// http :8080/login --auth lige:lige123
+	// http :8080/login Authorization:"Basic bGlnZTpsaWdlMTIz"
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

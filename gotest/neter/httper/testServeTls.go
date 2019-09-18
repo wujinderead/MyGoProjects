@@ -8,7 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"io"
+	"gotest/neter/httper/utils"
 	"log"
 	"math/big"
 	"net"
@@ -137,7 +137,7 @@ func createKeyAndCert() (keyFile, certFile string, err error) {
 		fmt.Println("open key file err:", err)
 		return
 	}
-	defer toClose(keyF)
+	defer utils.ToClose(keyF)
 
 	keyB := &pem.Block{Type: "EC PRIVATE KEY", Bytes: serverKeyBytes}
 	err = pem.Encode(keyF, keyB)
@@ -146,13 +146,4 @@ func createKeyAndCert() (keyFile, certFile string, err error) {
 		return
 	}
 	return
-}
-
-func toClose(closer io.Closer) {
-	if closer != nil {
-		err := closer.Close()
-		if err != nil {
-			fmt.Println("close err:", err)
-		}
-	}
 }
