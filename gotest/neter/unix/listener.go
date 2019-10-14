@@ -10,12 +10,12 @@ import (
 )
 
 func main() {
-	Listen()
+	listenUnix()
 }
 
-func Listen() {
+func listenUnix() {
 	// create address
-	addr, err := net.ResolveUnixAddr("unix", "src/net/unix/test.sock")
+	addr, err := net.ResolveUnixAddr("unix", "neter/unix/test.sock")
 	if err != nil {
 		fmt.Println("get unix sock addr error: ", err)
 		return
@@ -31,21 +31,14 @@ func Listen() {
 	// ctrl-c to stop process
 	// process: ctrl-c, notify sigc, get from sigc, close listener, accept error, main loop out,
 	// wait hoop exit, main exit
-	waithook := make(chan int)
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
-	go func(c chan os.Signal) {
-		sig := <-c
-		fmt.Printf("Caught signal %s: shutting down.\n", sig)
-		err := listener.Close() // if not close, the socket file can't be used again
-		if err != nil {
-			fmt.Println("close listener err:", err)
-		} else {
-			fmt.Println("listener closed.")
-		}
-		fmt.Println("hook exit")
-		waithook <- 1
-	}(sigc)
+	go func() {
+		sig := <-sigc
+		fmt.Printf("got signal %d, close conn and exit.\n", sig.(syscall.Signal))
+		err := listener.Close()
+		fmt.Println("listener close:", err)
+	}()
 
 	for {
 		conn, err := listener.AcceptUnix()
@@ -56,7 +49,6 @@ func Listen() {
 		// accept conn and use goroutine to process incoming conn
 		go echo(conn)
 	}
-	<-waithook
 	fmt.Println("main exit")
 }
 
@@ -75,7 +67,7 @@ func echo(conn net.Conn) {
 		// response to client
 		_, err = conn.Write([]byte("i got it!"))
 		if err != nil {
-			log.Fatal("Writing client error: ", err)
+			log.Println("Writing client error: ", err)
 		}
 	}
 }
