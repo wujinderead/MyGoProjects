@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestEncoderDecoder(t *testing.T) {
@@ -54,7 +55,7 @@ func TestEncoderDecoder(t *testing.T) {
 	}
 }
 
-func TestJson(t *testing.T) {
+func TestMarshalUnmarshal(t *testing.T) {
 	jsoner := []byte(`{
 	"name": "james",
 	"age": 35,
@@ -86,4 +87,89 @@ func TestJson(t *testing.T) {
 	fmt.Println("valid:", json.Valid(jsoner)) // check if it is valid json
 	jsoner[1] = ','
 	fmt.Println("valid:", json.Valid(jsoner))
+}
+
+// self-defined marshaller and unmarshaller
+type monthYear time.Time
+
+func (m monthYear) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Year  int `json:"year"`
+		Month int `json:"month"`
+	}{time.Time(m).Year(), int(time.Time(m).Month())})
+}
+
+type inter int
+
+func (i *inter) UnmarshalJSON(in []byte) error {
+	mm := struct {
+		Year  int `json:"year"`
+		Month int `json:"month"`
+	}{}
+	err := json.Unmarshal(in, &mm)
+	if err != nil {
+		return err
+	}
+	*i = inter(mm.Year*100 + mm.Month)
+	return nil
+}
+
+func TestMarshalUnmarshalJSONInterface(t *testing.T) {
+	m := monthYear(time.Now())
+	jm, err := json.Marshal(m)
+	fmt.Println(err, string(jm))
+	jm, err = json.Marshal(&m)
+	fmt.Println(err, string(jm))
+
+	i := inter(0)
+	err = (&i).UnmarshalJSON(jm)
+	fmt.Println(err, i)
+}
+
+func TestAnnotation(t *testing.T) {
+	type MM struct {
+		Alpha   int    `json:"-"`              // "-" ignore this field when parsing or outputting it
+		Bravo   int    `json:""`               // "" means no specified name, use "Bravo" as name
+		Charlie string `json:"char,omitempty"` // do not output this field when empty
+	}
+	m := MM{1, 1, ""}
+	b, err := json.Marshal(&m)
+	fmt.Println(err, string(b)) // charlie not output
+
+	m = MM{1, 1, "aaa"}
+	b, err = json.Marshal(&m)
+	fmt.Println(err, string(b)) // charlie outputs
+
+	var m1 MM
+	err = json.Unmarshal([]byte(`{"Alpha":2, "Bravo":2, "char":"aaa"}`), &m1)
+	fmt.Println(err, m1) // got {0 2 aaa}, alpha ignored
+
+	type inn1 struct {
+		Mike  MM  `json:"mike,inline"`
+		Delta int `json:"delta"`
+	}
+	in1 := &inn1{m1, 5}
+	b, err = json.Marshal(in1)
+	fmt.Println(err, string(b)) // wrapped struct: {"mike":{"Bravo":2,"char":"aaa"},"delta":5}
+
+	type inn2 struct {
+		MM
+		Delta int `json:"delta"`
+	}
+	in2 := &inn2{m1, 5}
+	b, err = json.Marshal(in2)
+	fmt.Println(err, string(b)) // unwrapped struct: {"Bravo":2,"char":"aaa","delta":5}
+
+	type mm struct {
+		Alpha   int    `json:"-"`
+		Bravo   int    `json:""`
+		Charlie string `json:"char,omitempty"`
+	}
+	type inn3 struct {
+		mm        // lowercase anonymous field can also be exported
+		Delta int `json:"delta"`
+	}
+	in3 := &inn3{mm{2, 2, "aaa"}, 5}
+	b, err = json.Marshal(in3)
+	fmt.Println(err, string(b)) // {"Bravo":1,"char":"aaa","delta":5}
 }
