@@ -106,7 +106,7 @@ func TestCert(t *testing.T) {
 
 func TestParseRsaKeyCert(t *testing.T) {
 	// parse rsa key
-	rsaKeyPem := readFile("../../keys/ca.key")
+	rsaKeyPem := readFile("../keys/rsa.ca.key")
 	block, _ := pem.Decode([]byte(rsaKeyPem))
 	rsaKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
@@ -117,7 +117,7 @@ func TestParseRsaKeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse ca certificate
-	caCertPem := readFile("../../keys/ca.crt")
+	caCertPem := readFile("../keys/rsa.ca.crt")
 	block, _ = pem.Decode([]byte(caCertPem))
 	caCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -128,7 +128,7 @@ func TestParseRsaKeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse client certificate request
-	serverCsrPem := readFile("../../keys/server.csr")
+	serverCsrPem := readFile("../keys/rsa.server.csr")
 	block, _ = pem.Decode([]byte(serverCsrPem))
 	serverCsr, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
@@ -139,7 +139,7 @@ func TestParseRsaKeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse client certificate
-	serverCertPem := readFile("../../keys/server.crt")
+	serverCertPem := readFile("../keys/rsa.server.crt")
 	block, _ = pem.Decode([]byte(serverCertPem))
 	serverCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -162,7 +162,7 @@ func TestParseEd25519KeyCert(t *testing.T) {
 		PrivateKey []byte
 		// optional attributes omitted.
 	}
-	ed25519CaKeyPem := readFile("../../keys/ed25519.ca.key")
+	ed25519CaKeyPem := readFile("../keys/ed25519.ca.key")
 	block, _ := pem.Decode([]byte(ed25519CaKeyPem))
 	var privKey pkcs8
 	if _, err := asn1.Unmarshal(block.Bytes, &privKey); err != nil {
@@ -177,7 +177,7 @@ func TestParseEd25519KeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse ca certificate
-	caCertPem := readFile("../../keys/ed25519.ca.crt")
+	caCertPem := readFile("../keys/ed25519.ca.crt")
 	block, _ = pem.Decode([]byte(caCertPem))
 	caCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -188,7 +188,7 @@ func TestParseEd25519KeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse client certificate request
-	serverCsrPem := readFile("../../keys/ed25519.server.csr")
+	serverCsrPem := readFile("../keys/ed25519.server.csr")
 	block, _ = pem.Decode([]byte(serverCsrPem))
 	serverCsr, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
@@ -199,7 +199,7 @@ func TestParseEd25519KeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse client certificate
-	serverCertPem := readFile("../../keys/ed25519.server.crt")
+	serverCertPem := readFile("../keys/ed25519.server.crt")
 	block, _ = pem.Decode([]byte(serverCertPem))
 	serverCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -212,7 +212,7 @@ func TestParseEd25519KeyCert(t *testing.T) {
 
 func TestParseEcdsaKeyCert(t *testing.T) {
 	// parse rsa key
-	caKeyPem := readFile("../../keys/ec.ca.key")
+	caKeyPem := readFile("../keys/ec.ca.key")
 	_, rest := pem.Decode([]byte(caKeyPem))
 	block, _ := pem.Decode([]byte(rest))
 	caKey, err := x509.ParseECPrivateKey(block.Bytes)
@@ -224,7 +224,7 @@ func TestParseEcdsaKeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse ca certificate
-	caCertPem := readFile("../../keys/ec.ca.crt")
+	caCertPem := readFile("../keys/ec.ca.crt")
 	block, _ = pem.Decode([]byte(caCertPem))
 	caCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -235,7 +235,7 @@ func TestParseEcdsaKeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse client certificate request
-	serverCsrPem := readFile("../../keys/ec.server.csr")
+	serverCsrPem := readFile("../keys/ec.client.csr")
 	block, _ = pem.Decode([]byte(serverCsrPem))
 	serverCsr, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
@@ -246,7 +246,7 @@ func TestParseEcdsaKeyCert(t *testing.T) {
 	fmt.Println()
 
 	// parse client certificate
-	serverCertPem := readFile("../../keys/ec.server.crt")
+	serverCertPem := readFile("../keys/ec.client.crt")
 	block, _ = pem.Decode([]byte(serverCertPem))
 	serverCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -263,7 +263,7 @@ func TestParseEcdsaKeyCert(t *testing.T) {
 
 func TestParseGoogleCert(t *testing.T) {
 	// get google.com certificate
-	googleCertPem := readFile("../../keys/www.google.com.crt")
+	googleCertPem := readFile("../keys/www.google.com.crt")
 	block, _ := pem.Decode([]byte(googleCertPem))
 	googleCert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -274,7 +274,7 @@ func TestParseGoogleCert(t *testing.T) {
 	fmt.Println()
 
 	// get google CA certificate
-	googleCaCertDer := readFile("../../keys/GTSGIAG3.crt")
+	googleCaCertDer := readFile("../keys/GTSGIAG3.crt")
 	googleCaCert, err := x509.ParseCertificate(googleCaCertDer)
 	if err != nil {
 		fmt.Println("parse der crl err:", err)
@@ -288,7 +288,7 @@ func TestParseGoogleCert(t *testing.T) {
 		googleCert.SignatureAlgorithm, googleCert.RawTBSCertificate, googleCert.Signature))
 
 	// get certificate revocation list
-	googleCaCrlDer := readFile("../../keys/GTSGIAG3.crl")
+	googleCaCrlDer := readFile("../keys/GTSGIAG3.crl")
 	googleCaCrl, err := x509.ParseDERCRL(googleCaCrlDer)
 	if err != nil {
 		fmt.Println("parse der crl err:", err)

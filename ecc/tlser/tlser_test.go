@@ -14,8 +14,8 @@ import (
 
 func TestX509LeyPair(t *testing.T) {
 	// get key pair from pem bytes
-	serverKeyPem, _ := ioutil.ReadFile("../../keys/ec.server.key")
-	serverCertPem, _ := ioutil.ReadFile("../../keys/ec.server.crt")
+	serverKeyPem, _ := ioutil.ReadFile("../keys/ec.server.key")
+	serverCertPem, _ := ioutil.ReadFile("../keys/ec.server.crt")
 	certificate, err := tls.X509KeyPair(serverCertPem, serverKeyPem)
 	if err != nil {
 		fmt.Println("get key pair err:", err)
@@ -31,7 +31,7 @@ func TestX509LeyPair(t *testing.T) {
 	}
 
 	// get key pair
-	certificate, err = tls.LoadX509KeyPair("../../keys/ec.server.crt", "../../keys/ec.server.key")
+	certificate, err = tls.LoadX509KeyPair("../keys/ec.server.crt", "../keys/ec.server.key")
 	if err != nil {
 		fmt.Println("get key pair err:", err)
 		return
@@ -47,18 +47,18 @@ func TestX509LeyPair(t *testing.T) {
 }
 
 func TestTlsConfig(t *testing.T) {
-	serverKeypair, err := tls.LoadX509KeyPair("../../keys/ec.server.crt", "../../keys/ec.server.key")
+	serverKeypair, err := tls.LoadX509KeyPair("../keys/ec.server.crt", "../keys/ec.server.key")
 	if err != nil {
 		t.Error("get key pair err:", err)
 		t.FailNow()
 	}
-	_, err = tls.LoadX509KeyPair("../../keys/ec.client.crt", "../../keys/ec.client.key")
+	_, err = tls.LoadX509KeyPair("../keys/ec.client.crt", "../keys/ec.client.key")
 	if err != nil {
 		t.Error("get key pair err:", err)
 		t.FailNow()
 	}
 	certPool := x509.NewCertPool()
-	caCert, _ := ioutil.ReadFile("../../ec.ca.crt")
+	caCert, _ := ioutil.ReadFile("../ec.ca.crt")
 	certPool.AppendCertsFromPEM(caCert)
 	serverConfig := &tls.Config{
 		Certificates: []tls.Certificate{serverKeypair},
