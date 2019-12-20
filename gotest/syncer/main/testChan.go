@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -11,7 +12,9 @@ func main() {
 	//testCloseChan1()
 	//testCloseChan2()
 	//testNilChan()
-	testHchan()
+	//testHchan()
+	//testLenCapChan()
+	testSelect()
 }
 
 func testCloseChan1() {
@@ -62,9 +65,54 @@ func testNilChan() {
 	<-ch
 }
 
+func testSelect() {
+	var wg sync.WaitGroup
+	wg.Add(3)
+	achan := make(chan int)
+	bchan := make(chan int)
+	cchan := make(chan int)
+	go func() {
+		select {
+		case a := <-achan:
+			fmt.Println("a:", a)
+		case <-time.NewTimer(time.Second).C:
+			fmt.Println("a timeout")
+		}
+		wg.Done()
+	}()
+	go func() {
+		select { // if we don't want to block unexpectedly infinitely, use select and a timer
+		case a := <-bchan:
+			fmt.Println("b:", a)
+		case <-time.NewTimer(time.Second).C:
+			fmt.Println("b timeout")
+		}
+		wg.Done()
+	}()
+	go func() {
+		select {
+		case a := <-cchan:
+			fmt.Println("c:", a)
+		case <-time.NewTimer(time.Second).C:
+			fmt.Println("c timeout")
+		}
+		wg.Done()
+	}()
+	select {
+	case achan <- 1: // if one action selected, the others don't try
+	case bchan <- 2:
+	case cchan <- 3:
+	}
+	wg.Wait()
+	// output:
+	// c: 3
+	// a timeout
+	// b timeout
+}
+
 // hchan defined in runtime/chan.go
 type hchan struct {
-	qcount   uint           // total data in the queue
+	qcount   uint           // total data in the queue, the buffered chan is stored in a circular queue
 	dataqsiz uint           // size of the circular queue
 	buf      unsafe.Pointer // points to an array of dataqsiz elements
 	elemsize uint16
@@ -135,6 +183,41 @@ func testHchan() {
 		a, ok := <-ch
 		fmt.Println(a, ok)
 	}
+}
+
+// though not common, but len() and cap() can apply to channel, which is a non-blocking action.
+// they are retrieved from the 'qcount' and 'dataqsiz' fields of 'hchan'. so it do not blocks at all.
+// it can be used as a hint to determine whether we should send or receive the chan to avoid blocking.
+func testLenCapChan() {
+	ch := make(chan int)
+	go func() {
+		time.Sleep(time.Second / 2)
+		fmt.Println(len(ch)) // return 0 for unbuffered chan
+		fmt.Println(cap(ch)) // 0
+		fmt.Println("got", <-ch)
+	}()
+	ch <- 1
+	time.Sleep(time.Second)
+	fmt.Println()
+
+	ch = make(chan int, 5)
+	go func() {
+		time.Sleep(time.Second / 2)
+		fmt.Println(len(ch)) // 3
+		fmt.Println(cap(ch)) // 5
+		fmt.Println("got", <-ch)
+		fmt.Println("got", <-ch)
+		fmt.Println(len(ch)) // 1
+		fmt.Println(cap(ch)) // 5
+		fmt.Println("got", <-ch)
+		fmt.Println("got", <-ch)
+		fmt.Println("got", <-ch)
+	}()
+	ch <- 1
+	ch <- 2
+	ch <- 3
+	close(ch)
+	time.Sleep(time.Second)
 }
 
 type _type struct {

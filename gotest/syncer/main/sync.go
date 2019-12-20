@@ -1,30 +1,30 @@
 package main
 
 import (
-	"sync/atomic"
 	"fmt"
+	"math/rand"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
-	"runtime"
-	"math/rand"
 )
 
 func main() {
 	//testOnce()
 	//testMutex()
 	//testCond()
-	//testAtomic()
+	testAtomic()
 	//testAtomicValue()
 	//testAtomicDifferentType()
 	//testRWMutex()
-	testPool()
+	//testPool()
 }
 
 func testOnce() {
 	var once sync.Once
 	a := 0
-	for i:=0; i<3; i++ {
+	for i := 0; i < 3; i++ {
 		once.Do(func() {
 			a += 1
 		})
@@ -59,7 +59,7 @@ func testCond() {
 	go func() {
 		lock.Lock()
 		fmt.Println("a1 lock at", time.Now().UnixNano()-start)
-		for a!=3 {
+		for a != 3 {
 			cond.Wait()
 			fmt.Println("a1 wake at", time.Now().UnixNano()-start)
 		}
@@ -70,7 +70,7 @@ func testCond() {
 	go func() {
 		lock.Lock()
 		fmt.Println("a2 lock at", time.Now().UnixNano()-start)
-		for a!=3 {
+		for a != 3 {
 			cond.Wait()
 			fmt.Println("a1 wake at", time.Now().UnixNano()-start)
 		}
@@ -78,13 +78,13 @@ func testCond() {
 		fmt.Println("a2 unlock at", time.Now().UnixNano()-start)
 		wg.Done()
 	}()
-	time.Sleep(50*time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 	go func() {
 		lock.Lock()
 		fmt.Println("t1 lock at", time.Now().UnixNano()-start)
 		a += 1
 		cond.Broadcast()
-		time.Sleep(100*time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		fmt.Println("t1 unlock at", time.Now().UnixNano()-start)
 		lock.Unlock()
 		wg.Done()
@@ -94,20 +94,20 @@ func testCond() {
 		fmt.Println("t2 lock at", time.Now().UnixNano()-start)
 		a += 1
 		cond.Broadcast()
-		time.Sleep(100*time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		fmt.Println("t2 unlock at", time.Now().UnixNano()-start)
 		lock.Unlock()
 		wg.Done()
 	}()
-	j:=0
-	for i:=0; i<5; i++ {
+	j := 0
+	for i := 0; i < 5; i++ {
 		go func() {
 			wg.Wait()
-			j+=1
+			j += 1
 			fmt.Println(j, "wait end")
 		}()
 	}
-	time.Sleep(3000*time.Millisecond)
+	time.Sleep(3000 * time.Millisecond)
 	wg.Wait()
 	fmt.Println("a=", a)
 }
@@ -123,8 +123,8 @@ func testAtomic() {
 	var uinter64 uint64
 	var uintptrer uintptr
 	var structer unsafe.Pointer
-	var apojo = pojo{1,"aaa"}
-	var bpojo = pojo{2,"bbb"}
+	var apojo = pojo{1, "aaa"}
+	var bpojo = pojo{2, "bbb"}
 
 	fmt.Printf("apojo: %p = %d, bpojo: %p = %d\n",
 		&apojo, uintptr(unsafe.Pointer(&apojo)), &bpojo, uintptr(unsafe.Pointer(&bpojo)))
@@ -151,6 +151,7 @@ func testAtomic() {
 	fmt.Println(atomic.CompareAndSwapPointer(&structer, unsafe.Pointer(&apojo), unsafe.Pointer(&bpojo)))
 	fmt.Println()
 
+	// swap is just "get and set"
 	fmt.Println(atomic.SwapInt32(&inter32, -789))
 	fmt.Println(atomic.SwapInt64(&inter64, -789))
 	fmt.Println(atomic.SwapUint32(&uinter32, 123456789))
@@ -183,7 +184,7 @@ func testAtomicValue() {
 	var holder atomic.Value
 	fmt.Println(runtime.GOMAXPROCS(6))
 	rand.Seed(time.Now().UnixNano())
-	for i:=0; i<100; i++ {
+	for i := 0; i < 100; i++ {
 		// atomic value can store and load simultaneously
 		go func() {
 			holder.Store(pojo{rand.Int(), "aaa"})
@@ -192,7 +193,7 @@ func testAtomicValue() {
 			_ = holder.Load()
 		}()
 	}
-	time.Sleep(100*time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	fmt.Println(holder.Load().(pojo))
 }
 
@@ -204,13 +205,13 @@ func testAtomicDifferentType() {
 	var v atomic.Value
 	v.Store(a{1, "bbb"})
 	v.Store(a{2, "ccc"})
-	v.Store(&a{3, "ddd"})  // panic here, value should be consistent with previous type
+	v.Store(&a{3, "ddd"}) // panic here, value should be consistent with previous type
 }
 
 func testRWMutex() {
 	var mu sync.RWMutex
 	// 3r 1w 3r 1w
-	for i:=0; i<3; i++ {
+	for i := 0; i < 3; i++ {
 		go func() {
 			mu.RLock()
 			fmt.Println("r1 lock at", time.Now().UnixNano())
@@ -220,7 +221,7 @@ func testRWMutex() {
 		}()
 	}
 	time.Sleep(time.Millisecond)
-	for i:=0; i<2; i++ {
+	for i := 0; i < 2; i++ {
 		go func() {
 			mu.Lock()
 			fmt.Println("w lock at", time.Now().UnixNano())
@@ -230,7 +231,7 @@ func testRWMutex() {
 		}()
 	}
 	time.Sleep(time.Millisecond)
-	for i:=0; i<3; i++ {
+	for i := 0; i < 3; i++ {
 		go func() {
 			mu.RLock()
 			fmt.Println("r2 lock at", time.Now().UnixNano())
@@ -239,7 +240,7 @@ func testRWMutex() {
 			mu.RUnlock()
 		}()
 	}
-	time.Sleep(4*time.Second)
+	time.Sleep(4 * time.Second)
 }
 
 func testPool() {
@@ -253,7 +254,7 @@ func testPool() {
 	bufPool := new(sync.Pool)
 	var wg sync.WaitGroup
 	wg.Add(20)
-	for i:=0; i<10; i++ {
+	for i := 0; i < 10; i++ {
 		go func(i int) {
 			pojop := &pojo{rander.Int(), "aaa"}
 			buf := make([]byte, 1024)
@@ -269,11 +270,11 @@ func testPool() {
 			if bufI != nil {
 				fmt.Printf("G%d get buf: %p\n", i, bufI.(*[]byte))
 			}
-			fmt.Println("G", i, pojoI==nil, bufI==nil)
+			fmt.Println("G", i, pojoI == nil, bufI == nil)
 			wg.Done()
 		}(i)
 	}
-	for i:=10; i<20; i++ {
+	for i := 10; i < 20; i++ {
 		go func(i int) {
 			time.Sleep(time.Second)
 			pojoI := pojoPool.Get()
@@ -284,7 +285,7 @@ func testPool() {
 			if bufI != nil {
 				fmt.Printf("G%d get buf: %p\n", i, bufI.(*[]byte))
 			}
-			fmt.Println("G", i, pojoI==nil, bufI==nil)
+			fmt.Println("G", i, pojoI == nil, bufI == nil)
 			wg.Done()
 		}(i)
 	}

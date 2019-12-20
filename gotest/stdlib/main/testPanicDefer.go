@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -11,7 +12,9 @@ func main() {
 	//testGoroutinePanic()
 	//testTwice()
 	//testCantRecover()
-	testBothDefer()
+	//testBothDefer()
+	testDeferScope()
+	//testOncePanic()
 }
 
 func testPanic() {
@@ -118,10 +121,18 @@ func testCantRecover() {
 func testBothDefer() {
 	defer func() {
 		fmt.Println("main defer")
+		// can't recover other goroutine's panic,
+		// because this defer won't be executed when other goroutine panicked
+		r := recover()
+		fmt.Println(r)
 	}()
 	go func() {
 		defer func() {
 			fmt.Println("inner defer")
+			// current goroutine's panic will cause the whole process exit,
+			// the only chance to fix is to recover() here.
+
+			// err := recover()
 		}()
 		time.Sleep(10 * time.Millisecond)
 		// panic in goroutine makes the whole process exit.
@@ -129,8 +140,54 @@ func testBothDefer() {
 		// other goroutines' defer (including main routine) won't be executed
 		panic("go1 panic")
 	}()
-	var a int
-	for {
-		a++
+	// block endless. not like 'for{}' which cost system resource, 'select{}' yield and block
+	select {}
+}
+
+func testDeferScope() {
+	// output: 2 4 5 3 7 9 8 6 1
+	defer fmt.Println(1)
+	fmt.Println(2)
+	func() { // defer adjust to func's scope
+		defer fmt.Println(3)
+		fmt.Println(4)
+		defer fmt.Println(5)
+	}()
+	{ // this scope just adjust to variables
+		defer fmt.Println(6)
+		fmt.Println(7)
+		defer fmt.Println(8)
 	}
+	defer fmt.Println(9)
+}
+
+func testOncePanic() {
+	var once sync.Once
+	var wg sync.WaitGroup
+	wg.Add(2)
+	f := func() {
+		time.Sleep(1000)
+		fmt.Println("once done")
+		panic("aaa")
+	}
+	go func() {
+		defer wg.Done()
+		defer func() { // Once consider f() done even f() panics, however, it's caller's responsibility to recover
+			a := recover()
+			fmt.Println("r1:", a)
+		}()
+		once.Do(f)
+		fmt.Println("1 done")
+	}()
+	go func() {
+		defer wg.Done()
+		defer func() {
+			a := recover()
+			fmt.Println("r2:", a)
+		}()
+		once.Do(f)
+		fmt.Println("2 done")
+	}()
+	wg.Wait()
+	once.Do(f) // no op
 }
