@@ -1,10 +1,12 @@
 package ostest
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -145,8 +147,11 @@ func TestIo1(t *testing.T) {
 
 	// Pipe
 	pr, pw := io.Pipe()
-	// pipe are like channels, there can be multiple reader and writer concurrently,
-	// reader will block when nothing to read, writer will block until all its content are read
+	// linux syscall pipe() is used for interprocess communication that the data written to the write end
+	// of the pipe is buffered by the kernel until it is read from the read end of the pipe.
+	// golang io.Pipe() is like the syscall pipe() but for communication for goroutines.
+	// there can be multiple readers and writers concurrently, reader will block when nothing to read,
+	// writer will block until all written data are read. io.Pipe() do not buffer the data.
 	var wg sync.WaitGroup
 	wg.Add(4)
 	go func() {
@@ -253,6 +258,73 @@ func (b *buffer) WriteString(str string) (int, error) {
 		return 0, closedErr
 	}
 	return b.Write([]byte(str))
+}
+
+func TestCopyReadFromWriteTo(t *testing.T) {
+	w := &wt{os.Stderr}
+	r := &rd{bytes.NewReader([]byte("bbbbbbb\n"))}
+	fmt.Printf("w: %p, r: %p\n", w, r)
+
+	// w ReadFrom reader (bytes.Reader) and write to w.w (os.Stderr)
+	n, err := w.ReadFrom(bytes.NewReader([]byte("aaaaaaa\n")))
+	fmt.Println(n, err)
+
+	// r read r.r (bytes.Reader) and WriteTo writer (os.Stderr)
+	n, err = r.WriteTo(os.Stdout)
+	fmt.Println(n, err)
+	fmt.Println()
+
+	w = &wt{os.Stderr}
+	r = &rd{bytes.NewReader([]byte("ccccccc\n"))}
+	n, err = io.Copy(w, r) // call r.WriteTo(w) first
+	fmt.Println(n, err)
+	fmt.Println()
+
+	f, _ := os.Open("/proc/sys/kernel/pid_max")
+	defer f.Close()
+	n, err = io.Copy(w, f) // no r.WriteTo, call w.ReadFrom(r) instead
+	fmt.Println(n, err)
+	_, _ = f.Seek(0, 0)
+	fmt.Println()
+
+	n, err = io.Copy(os.Stdout, f) // just call Read and Write
+	fmt.Println(n, err)
+}
+
+type wt struct {
+	w io.Writer
+}
+
+type rd struct {
+	r io.Reader
+}
+
+// the semantic of io.ReaderFrom interface:
+// read from r (then process data implicitly, e.g. write the data to somewhere). return number read and error.
+func (w *wt) ReadFrom(r io.Reader) (n int64, err error) {
+	fmt.Printf("%p call ReadFrom\n", w)
+	buf := make([]byte, 30)
+	nn, err := r.Read(buf)
+	_, _ = w.w.Write(buf[:nn])
+	return int64(nn), err
+}
+
+func (w *wt) Write(b []byte) (n int, err error) {
+	return w.w.Write(b)
+}
+
+// the semantic of io.WriterTo interface:
+// (get some data implicitly, e.g. read data from somewhere) and write to w. return the number written and error.
+func (r *rd) WriteTo(w io.Writer) (n int64, err error) {
+	fmt.Printf("%p call WriteTo\n", r)
+	buf := make([]byte, 30)
+	nn, err := r.r.Read(buf)
+	_, _ = w.Write(buf[:nn])
+	return int64(nn), err
+}
+
+func (r *rd) Read(b []byte) (n int, err error) {
+	return r.r.Read(b)
 }
 
 func min(a, b int) int {
