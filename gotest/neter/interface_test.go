@@ -51,7 +51,7 @@ func TestLookUp(t *testing.T) {
 		t.Fatal("get hostname failed")
 	}
 	// use ip to get hostname
-	addrs := []string{"::1", "10.19.138.22", "127.0.0.2"}
+	addrs := []string{"::1", "10.20.38.188", "127.0.0.2", "52.86.127.180", "202.89.233.101"}
 	for i := range addrs {
 		names, err := net.LookupAddr(addrs[i])
 		fmt.Println(names, err)
@@ -59,7 +59,7 @@ func TestLookUp(t *testing.T) {
 	fmt.Println()
 
 	// get canonical hostname
-	hosts := []string{"localhost", hostname, "www.baidu.com", "hub.docker.com"}
+	hosts := []string{"localhost", hostname, "www.baidu.com", "hub.docker.com", "cn.bing.com"}
 	for i := range hosts {
 		cname, err := net.LookupCNAME(hosts[i])
 		fmt.Println(cname, err)
@@ -82,14 +82,13 @@ func TestLookUp(t *testing.T) {
 
 	// get port from service name
 	services := []string{"ssh", "ftp", "http", "kerberos"}
-	for i := range hosts {
+	for i := range services {
 		port, err := net.LookupPort("tcp", services[i])
 		fmt.Println(port, err)
 		port, err = net.LookupPort("udp", services[i])
 		fmt.Println(port, err)
 	}
 	fmt.Println()
-
 }
 
 func displayInterface(face *net.Interface) {
