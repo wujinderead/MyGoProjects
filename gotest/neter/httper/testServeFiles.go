@@ -89,7 +89,8 @@ func testStripPrefix() {
 		return
 	}
 	fmt.Println("user home:", home)
-	// on linux, pattern must be "/home/", prefix can be "/home" or "/home/"
+	// on linux, pattern must be "/home/" (only patterns end with "/" are considered wildcard pattern),
+	// strip prefix can be "/home" or "/home/".
 	// when request a directory "/home" it will response 301 to redirect to "/home/" instead
 	http.Handle("/home/", http.StripPrefix("/home", http.FileServer(http.Dir(home))))
 	http.Handle("/goroot/", http.StripPrefix("/goroot/", http.FileServer(http.Dir("/usr/local/go"))))

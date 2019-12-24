@@ -3,12 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"gotest/neter/httper/utils"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"unsafe"
+
+	"gotest/neter/httper/utils"
 )
 
 func main() {
