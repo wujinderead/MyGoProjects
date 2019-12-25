@@ -18,7 +18,8 @@ func main() {
 	//testPostForm()
 	//testHead()
 	//testDo()
-	testRedirectResponse()
+	//testRedirectResponse()
+	testWriteRequest()
 }
 
 func testGet() {
@@ -227,4 +228,41 @@ func testRedirectResponse() {
 
 	utils.PrintTlsConnState(resp.TLS)
 	fmt.Println()
+}
+
+// serialize request to bytes and write to writer
+func testWriteRequest() {
+	req := &http.Request{}
+	req.Method = "PUT"
+	req.URL = &url.URL{
+		Scheme: "http",
+		Host:   "httpbin.org",
+		Path:   "/put",
+	}
+	req.Proto = "HTTP/1.1"
+	req.ProtoMajor = 1
+	req.ProtoMinor = 1
+	req.Body = ioutil.NopCloser(strings.NewReader(`{"msg":"我的天呐"}`))
+	req.Header = make(map[string][]string)
+	req.Header["Accept"] = []string{"text/html", "application/xhtml+xml", "application/xml", "image/webp"}
+	req.Header["Accept-Language"] = []string{"zh-CN,zh;q=0.9"}
+	req.Header["Sec-Fetch-Mode"] = []string{"navigate"}
+	req.Header["Sec-Fetch-Site"] = []string{"same-origin"}
+	req.Header["Sec-Fetch-User"] = []string{"?1"}
+	req.Header["Accept-Language"] = []string{"zh-CN,zh;q=0.9"}
+	req.AddCookie(&http.Cookie{Name: "username", Value: "lgq", Path: "/", Domain: ".baidu.com"})
+	req.AddCookie(&http.Cookie{Name: "password", Value: "12345678"})
+
+	buf := &bytes.Buffer{}
+	_ = req.Write(buf)
+	fmt.Println(buf.Bytes())
+	fmt.Println(string(buf.Bytes()))
+
+	fmt.Println("================")
+	fmt.Println()
+	buf.Reset()
+	req.Body = nil
+	_ = req.Write(buf)
+	fmt.Println(buf.Bytes())
+	fmt.Println(string(buf.Bytes()))
 }

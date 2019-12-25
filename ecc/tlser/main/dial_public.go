@@ -1,19 +1,22 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"time"
 	"unsafe"
 )
 
 func main() {
-	//tlsDialBaidu()
-	tlsClientBaidu()
+	tlsDialBaidu()
+	//tlsClientBaidu()
 }
 
 // tls dial baidu
@@ -33,6 +36,35 @@ func tlsDialBaidu() {
 		return
 	}
 	displayConn(conn)
+
+	// write a http request to the tls (tcp) conn
+	bw := bufio.NewWriter(conn)
+	_, _ = bw.WriteString("GET / HTTP/1.1\r\n")
+	_, _ = bw.WriteString("Host: www.baidu.com\r\n")
+	_, _ = bw.WriteString("Connection: keep-alive\r\n")
+	_, _ = bw.WriteString("\r\n")
+	fmt.Println("flush:", bw.Flush())
+
+	// read the http response from the tls (tcp) conn
+	total := 0
+	clen := 0
+	buf := make([]byte, 16*1024)
+	n, err := conn.Read(buf)
+	cind := bytes.Index([]byte(buf[:n]), []byte("Content-Length"))
+	cend := cind + bytes.IndexByte([]byte(buf[cind:n]), '\r')
+	clen, _ = strconv.Atoi(string(buf[cind+len("Content-Length: ") : cend]))
+	fmt.Println(string(buf[:n]))
+	ns := []int{n}
+	for {
+		n, err = conn.Read(buf)
+		ns = append(ns, n)
+		total += n
+		fmt.Print(string(buf[:n]))
+		if n > 2 && string(buf[n-2:n]) == "\r\n" {
+			break
+		}
+	}
+	fmt.Println(clen, total, ns)
 }
 
 // tcp dial baidu and create tls client
