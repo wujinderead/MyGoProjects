@@ -25,12 +25,14 @@ func tlsDial() {
 		Certificates: []tls.Certificate{clientKeyPair},
 		RootCAs:      certPool,
 	}
-	conn, err := tls.Dial("tcp", "localhost:12345", clientConfig)
+	conn, err := tls.Dial("tcp", "localhost:12345", clientConfig) // tls.Dial() just dial tcp, it hasn't handshaked yet
 	defer toClose2(conn)
 	if err != nil {
 		fmt.Println("dial err:", err)
 		return
 	}
+	fmt.Println("handshake:", conn.Handshake()) // client initiate a handshake explicitly
+	// Write() invoke Handshake() implicitly, if already handshaked, it has no effect
 	_, err = conn.Write([]byte("my name is van from " + conn.LocalAddr().String()))
 	if err != nil {
 		fmt.Println("write err:", err)

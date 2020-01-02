@@ -35,13 +35,13 @@ func tlsListen() {
 		fmt.Println("listen err:", err)
 		return
 	}
-	conn, err := listener.Accept()
+	conn, err := listener.Accept() // (net.Listener).Accept() is just accept a tcp conn, it hasn't handshaked yet
 	defer toClose1(conn)
 	if err != nil {
 		fmt.Println("accept err:", err)
 	}
 	byter := make([]byte, 128)
-	n, err := conn.Read(byter)
+	n, err := conn.Read(byter) // tls.Conn.Read() or tls.Conn.Write() invoke Handshake() implicitly
 	if err != nil && err != io.EOF {
 		fmt.Println("read err:", err)
 		return
