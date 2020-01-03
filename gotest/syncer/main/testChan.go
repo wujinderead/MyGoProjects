@@ -14,7 +14,8 @@ func main() {
 	//testNilChan()
 	//testHchan()
 	//testLenCapChan()
-	testSelect()
+	//testSelect()
+	testChanClosedWhenSending()
 }
 
 func testCloseChan1() {
@@ -186,8 +187,9 @@ func testHchan() {
 }
 
 // though not common, but len() and cap() can apply to channel, which is a non-blocking action.
-// they are retrieved from the 'qcount' and 'dataqsiz' fields of 'hchan'. so it do not blocks at all.
-// it can be used as a hint to determine whether we should send or receive the chan to avoid blocking.
+// they are retrieved from the 'qcount' and 'dataqsiz' fields of 'hchan'.
+// but the result should be deemed as ephemeral and not reliable.
+// it can be used as a hint to determine whether we should send or receive to avoid blocking.
 func testLenCapChan() {
 	ch := make(chan int)
 	go func() {
@@ -218,6 +220,36 @@ func testLenCapChan() {
 	ch <- 3
 	close(ch)
 	time.Sleep(time.Second)
+}
+
+func testChanClosedWhenSending() {
+	ch := make(chan int)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if a := recover(); a != nil {
+				fmt.Println("recover1:", a)
+			}
+		}()
+		// when current goroutine is blocked on sending, while another goroutine closes the channel,
+		// current goroutine will panic "send on closed channel"
+		ch <- 1
+	}()
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if a := recover(); a != nil {
+				fmt.Println("recover2:", a)
+			}
+		}()
+		ch <- 2
+	}()
+	fmt.Println(<-ch)
+	time.Sleep(time.Second)
+	close(ch)
+	wg.Wait()
 }
 
 type _type struct {
