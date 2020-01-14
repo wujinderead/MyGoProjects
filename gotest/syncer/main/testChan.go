@@ -57,13 +57,20 @@ func testCloseChan2() {
 }
 
 func testNilChan() {
-	// send to nil channel cause
-	// 'fatal err:'fatal error: all goroutines are asleep - deadlock!'
-	var ch chan int
+	var ch chan int // uninitialized chan, i.e., nil chan
 	go func() {
+		// sending to nil channel will call gopark() to block current goroutine infinitely,
+		// because no one would call gounpark() to wake it up.
+		// since this goroutine never ends, its resources never gets released, thus this goroutine leaks.
 		ch <- 1
+		fmt.Println("aaa") // never get executed
 	}()
-	<-ch
+	go func() {
+		// receiving from nil channel also call gopark() to block infinitely
+		<-ch
+		fmt.Println("aaa") // never get executed
+	}()
+	time.Sleep(time.Second)
 }
 
 func testSelect() {

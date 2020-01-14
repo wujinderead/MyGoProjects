@@ -116,3 +116,41 @@ func TestSliceAppendReference(t *testing.T) {
 	fmt.Println("trunc[0] addr:", uintptr(unsafe.Pointer(&trunc[0])))   // 824633836496
 	fmt.Println("fourth[2] addr:", uintptr(unsafe.Pointer(&fourth[2]))) // 824633836496
 }
+
+func TestPointerIndexable(t *testing.T) {
+	a := []int{1, 2, 3, 4, 5, 6}
+	p := &a[0]                           // a pointer of an underlying array
+	b := (*[4000]int)(unsafe.Pointer(p)) // the most convenient way to convert a pointer to something indexable
+	fmt.Println(b[3])                    // that's ok
+	// that's legal, but we should avoid, because the value has no meaning,
+	// and it's dangerous to access arbitrary address during runtime.
+	fmt.Println(b[3500])
+
+	// pointer to array to slice
+	bb := (*[4000]int)(unsafe.Pointer(p))[:]
+	fmt.Println(bb[3], bb[3500], len(bb), cap(bb))
+
+	_ = (*[]int)(unsafe.Pointer(p)) // that's not the right way to make a pointer indexable
+
+	// make a slice header
+	h := &struct {
+		p   unsafe.Pointer
+		len int
+		cap int
+	}{unsafe.Pointer(p), 6, 6}
+	c := *(*[]int)(unsafe.Pointer(h))
+	fmt.Println(c[0], c[5])
+}
+
+func TestDoubleColon(t *testing.T) {
+	// double colon when truncating a slice is to specify the cap
+	a := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	b := a[3:6:8]                  // a[3,4,5] is elements of b, a[6,7] is as empty slots of b
+	fmt.Println(b, len(b), cap(b)) // len 3, cap 5
+	b = append(b, -1)              // a[6] change to -1, because a, b share the same underlying array
+	fmt.Println(a, b)
+	b = append(b, -2) // a[7] change to -2, because a, b share the same underlying array
+	fmt.Println(a, b)
+	b = append(b, -3) // a doesn't change, because b is out of capacity, and copied to a new underlying array
+	fmt.Println(a, b)
+}

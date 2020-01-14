@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"sync"
 	"testing"
 	"unsafe"
 )
@@ -34,6 +35,7 @@ func TestEmptyStruct(t *testing.T) {
 	fmt.Println("typ kind      :", typ.kind, reflect.Kind(typ.kind))
 	fmt.Println("typ str       :", typ.str)
 	fmt.Println("typ ptrToThis :", typ.ptrToThis)
+	fmt.Printf("eface data: %x\n", uintptr((*eface)(unsafe.Pointer(&ia)).data)) // 0x66a320, stll the same address
 	fmt.Println()
 
 	var ipa interface{} = pa
@@ -96,4 +98,66 @@ func TestStructFields(t *testing.T) {
 		fmt.Println(i, "offset:", field.offset())
 		fmt.Println(i, "kind:", reflect.Kind(field.typ.kind))
 	}
+}
+
+func TestUnnamedStruct(t *testing.T) {
+	a := struct {
+		int
+		string
+	}{10, "aaa"}
+	fmt.Println(reflect.TypeOf(a)) // struct { int; string }
+	fmt.Println(a.int, a.string)   // accessed by a.int, a.string
+
+	b := struct {
+		int
+		string
+	}{10, "aaa"}
+	fmt.Println(reflect.TypeOf(b)) // struct { int; string }
+	fmt.Println(b.int, b.string)
+
+	b1 := struct {
+		a int
+		string
+	}{10, "aaa"}
+	fmt.Println(reflect.TypeOf(b1)) // struct { a int; string }
+
+	b2 := struct {
+		a int
+		b string
+	}{10, "aaa"}
+	fmt.Println(reflect.TypeOf(b2)) // struct { a int; b string }
+
+	// 'struct{int;string}' seems very like 'struct{int int;string string}', but they are not same type
+	b3 := struct {
+		int    int
+		string string
+	}{10, "aaa"}
+	fmt.Println(b3.int, b3.string)
+	fmt.Println(reflect.TypeOf(b3))
+
+	var efa interface{} = a
+	var efb interface{} = b
+	var efb1 interface{} = b1
+	var efb2 interface{} = b2
+	var efb3 interface{} = b3
+	ta := (*eface)(unsafe.Pointer(&efa))._type
+	tb := (*eface)(unsafe.Pointer(&efb))._type
+	tb1 := (*eface)(unsafe.Pointer(&efb1))._type
+	tb2 := (*eface)(unsafe.Pointer(&efb2))._type
+	tb3 := (*eface)(unsafe.Pointer(&efb3))._type
+	fmt.Println(unsafe.Pointer(ta), ta.hash) // a.type == b.type != b1.type != b2.type != b3.type
+	fmt.Println(unsafe.Pointer(tb), tb.hash) // struct{int;string} is not struct{a int;string}
+	fmt.Println(unsafe.Pointer(tb1), tb1.hash)
+	fmt.Println(unsafe.Pointer(tb2), tb2.hash)
+	fmt.Println(unsafe.Pointer(tb3), tb3.hash)
+
+	// c := struct {int;string;int}{}     // duplicated field not allowed
+	c := struct { // it's like struct{ int int; string string; a int; Mutex *sync.Mutex }
+		int
+		string
+		a int
+		*sync.Mutex
+	}{10, "aaa", 38, &sync.Mutex{}}
+	fmt.Println(reflect.TypeOf(c)) // struct { int; string; a int; *sync.Mutex }
+	fmt.Println(c.int, c.string, c.a, c.Mutex)
 }
