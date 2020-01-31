@@ -27,6 +27,7 @@ import "fmt"
 //   1 <= text2.length <= 1000
 //   The input strings consist of lowercase English characters only.
 
+// n space
 func longestCommonSubsequence(a string, b string) int {
 	if len(a) == 0 || len(b) == 0 {
 		return 0
@@ -34,30 +35,20 @@ func longestCommonSubsequence(a string, b string) int {
 	if len(a) < len(b) {
 		a, b = b, a // let b be shorter
 	}
-	// let lcs(i, j) be the lcs of a[0...i] and b[0...j], then
-	// if a[i]==b[j], lcs(i, j) = lcs(i-1, j-1); if not, lcs(i, j) = max(lcs(i-1, j), lcs(i, j-1))
-	lcs := make([]int, len(b))
-
-	// make line 0
-	if a[0] == b[0] {
-		lcs[0] = 1
-	}
-	for j := 1; j < len(b); j++ {
-		lcs[j] = lcs[j-1]
-		if a[0] == b[j] {
-			lcs[j] = 1
-		}
-	}
+	// let pa[i] be the prefix of string a with length i,
+	// i.e, pa[0]="", pa[1]=a[0...0], pa[2]=a[0...1], pa[i]=a[0...i-1]
+	// let lcs(i, j) be the lcs of pa[i] and pb[j], then
+	// if i*j==0, lcs(i, j)=0;
+	// if a[i-1]==b[j-1], lcs(i, j)=lcs(i-1, j-1)+1;
+	// if a[i-1]!=b[j-1], lcs(i, j)=max(lcs(i-1, j), lcs(i, j-1))
+	lcs := make([]int, len(b)+1)
 
 	// dp
-	for i := 1; i < len(a); i++ {
+	for i := 1; i <= len(a); i++ {
 		tmp := lcs[0] // to store lcs(i-1, j-1)
-		if a[i] == b[0] {
-			lcs[0] = 1
-		}
-		for j := 1; j < len(b); j++ {
-			tmp2 := lcs[j]
-			if a[i] == b[j] {
+		for j := 1; j <= len(b); j++ {
+			tmp2 := lcs[j] // to store lcs(i-1, j)
+			if a[i-1] == b[j-1] {
 				lcs[j] = tmp + 1
 			} else {
 				lcs[j] = max(lcs[j-1], lcs[j])
@@ -65,7 +56,38 @@ func longestCommonSubsequence(a string, b string) int {
 			tmp = tmp2
 		}
 	}
-	return lcs[len(b)-1]
+	return lcs[len(b)]
+}
+
+// 2n space
+func longestCommonSubsequence1(a string, b string) int {
+	if len(a) == 0 || len(b) == 0 {
+		return 0
+	}
+	if len(a) < len(b) {
+		a, b = b, a // let b be shorter
+	}
+	// let pa[i] be the prefix of string a with length i,
+	// i.e, pa[0]="", pa[1]=a[0...0], pa[2]=a[0...1], pa[i]=a[0...i-1]
+	// let lcs(i, j) be the lcs of pa[i] and pb[j], then
+	// if i*j==0, lcs(i, j)=0;
+	// if a[i-1]==b[j-1], lcs(i, j)=lcs(i-1, j-1)+1;
+	// if a[i-1]!=b[j-1], lcs(i, j)=max(lcs(i-1, j), lcs(i, j-1))
+	prev := make([]int, len(b)+1)
+	cur := make([]int, len(b)+1)
+
+	// dp
+	for i := 1; i <= len(a); i++ {
+		for j := 1; j <= len(b); j++ {
+			if a[i-1] == b[j-1] {
+				cur[j] = prev[j-1] + 1
+			} else {
+				cur[j] = max(prev[j], cur[j-1])
+			}
+		}
+		prev, cur = cur, prev
+	}
+	return prev[len(b)]
 }
 
 func max(a, b int) int {
@@ -76,13 +98,20 @@ func max(a, b int) int {
 }
 
 func main() {
-	fmt.Println(longestCommonSubsequence("xabxac", "abcabxabcd"))
-	fmt.Println(longestCommonSubsequence("xabxaabxa", "babxba"))
-	fmt.Println(longestCommonSubsequence("abede", "eghie"))
-	fmt.Println(longestCommonSubsequence("pqrst", "uvwxyz"))
-	fmt.Println(longestCommonSubsequence("a", "bcde"))
-	fmt.Println(longestCommonSubsequence("a", "bcade"))
-	fmt.Println(longestCommonSubsequence("adsd", "a"))
-	fmt.Println(longestCommonSubsequence("a", "ab"))
-	fmt.Println(longestCommonSubsequence("a", ""))
+	f1 := longestCommonSubsequence
+	f2 := longestCommonSubsequence1
+	for _, v := range [][]string{
+		{"xabxac", "abcabxabcd"},
+		{"xabxaabxa", "babxba"},
+		{"abede", "eghie"},
+		{"pqrst", "uvwxyz"},
+		{"a", "bcde"},
+		{"a", "bcade"},
+		{"adsd", "a"},
+		{"a", "ab"},
+		{"a", ""},
+	} {
+		fmt.Println(f1(v[0], v[1]), f2(v[0], v[1]))
+	}
+
 }
