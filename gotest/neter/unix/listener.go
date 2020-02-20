@@ -2,72 +2,115 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
-	"os"
-	"os/signal"
 	"syscall"
 )
 
 func main() {
-	listenUnix()
+	//listenUnix()
+	listenUnixStreamSyscall()
+	//listenUnixgram()
 }
 
 func listenUnix() {
-	// create address
-	addr, err := net.ResolveUnixAddr("unix", "neter/unix/test.sock")
-	if err != nil {
-		fmt.Println("get unix sock addr error: ", err)
-		return
-	}
-
 	// create listener
-	listener, err := net.ListenUnix("unix", addr)
+	listener, err := net.Listen("unix", "neter/unix/listen.sock")
 	if err != nil {
 		fmt.Println("listen unix sock error: ", err)
 		return
 	}
+	defer listener.Close()
+	lis := listener.(*net.UnixListener)
+	lis.SetUnlinkOnClose(true)   // delete the socket file after close
 
-	// ctrl-c to stop process
-	// process: ctrl-c, notify sigc, get from sigc, close listener, accept error, main loop out,
-	// wait hoop exit, main exit
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		sig := <-sigc
-		fmt.Printf("got signal %d, close conn and exit.\n", sig.(syscall.Signal))
-		err := listener.Close()
-		fmt.Println("listener close:", err)
-	}()
-
-	for {
-		conn, err := listener.AcceptUnix()
-		if err != nil {
-			fmt.Println("accept error: ", err)
-			break // if error, break
-		}
-		// accept conn and use goroutine to process incoming conn
-		go echo(conn)
+	conn, err := lis.AcceptUnix()
+	if err != nil {
+		fmt.Println("accept error: ", err)
+		return
 	}
-	fmt.Println("main exit")
-}
-
-// the process func
-func echo(conn net.Conn) {
-	buf := make([]byte, 512)
-	for {
+	buf := make([]byte, 32)
+	fmt.Println("local:", conn.LocalAddr().String(), ", remote:", conn.RemoteAddr().String())
+	for i:=0; i<3; i++ {
 		n, err := conn.Read(buf)
 		if err != nil {
-			return
+			fmt.Println("read err:", err)
+			break
 		}
-
-		data := buf[0:n]
-		println("Server got:", string(data))
-
-		// response to client
-		_, err = conn.Write([]byte("i got it!"))
+		fmt.Println("read:", string(buf[:n]))
+		n, err = conn.Write([]byte("i got it"))
 		if err != nil {
-			log.Println("Writing client error: ", err)
+			fmt.Println("write err:", err)
+			break
+		}
+	}
+}
+
+func listenUnixStreamSyscall() {
+	skfd, err := syscall.Socket(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	if err != nil {
+		fmt.Println("open socket err:", err)
+		return
+	}
+	defer syscall.Close(skfd)
+	laddr := &syscall.SockaddrUnix{Name: "neter/unix/listen.sock"}
+	err = syscall.Bind(skfd, laddr)
+	if err != nil {
+		fmt.Println("bind err:", err)
+		return
+	}
+	defer syscall.Unlink(laddr.Name)
+	err = syscall.Listen(skfd, syscall.SOMAXCONN)
+	if err != nil {
+		fmt.Println("listen err:")
+		return
+	}
+
+	connfd, raddr, err := syscall.Accept(skfd)
+	if err != nil {
+		fmt.Println("accept err:", err)
+		return
+	}
+	fmt.Println("sockfd:", skfd, "connfd:", connfd, "raddr:", raddr.(*syscall.SockaddrUnix).Name)
+
+	buf := make([]byte, 32)
+	for i:=0; i<3; i++ {
+		n, err := syscall.Read(connfd, buf)
+		if err != nil {
+			fmt.Println("read err:", err)
+			break
+		}
+		fmt.Println("read:", string(buf[:n]))
+		n, err = syscall.Write(connfd, []byte("i got it"))
+		if err != nil {
+			fmt.Println("write err:", err)
+			break
+		}
+	}
+}
+
+func listenUnixgram() {
+	// create listener
+	laddr, _ := net.ResolveUnixAddr("unix", "neter/unix/listen.sock")
+	conn, err := net.ListenUnixgram("unixgram", laddr)
+	if err != nil {
+		fmt.Println("listen unix sock error: ", err)
+		return
+	}
+	defer syscall.Unlink(laddr.Name)
+	defer conn.Close()
+
+	buf := make([]byte, 32)
+	for i:=0; i<3; i++ {
+		n, addr, err := conn.ReadFromUnix(buf)
+		if err != nil {
+			fmt.Println("read err:", err)
+			break
+		}
+		fmt.Println("read:", string(buf[:n]), ", from:", addr.Network(), addr.String())
+		n, err = conn.WriteToUnix([]byte("i got it"), addr)
+		if err != nil {
+			fmt.Println("write err:", err)
+			break
 		}
 	}
 }
