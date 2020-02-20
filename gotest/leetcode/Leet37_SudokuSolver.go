@@ -1,4 +1,4 @@
-package leetcode
+package main
 
 // https://leetcode.com/problems/sudoku-solver/
 
