@@ -27,9 +27,7 @@ import (
 //   Explanation: In this case, no transaction is done, i.e. max profit = 0.
 
 // split the array to 2 parts. find the best result for 2 part and sum it.
-// O(N) time, O(N) space. there is O(N) time, O(1) space solution, see:
-// https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/discuss/39615/My-explanation-for-O(N)-solution!
-// https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/discuss/149383/Easy-DP-solution-using-state-machine-O(n)-time-complexity-O(1)-space-complexity
+// O(N) time, O(N) space.
 func maxProfit(prices []int) int {
     if len(prices)==0 {
     	return 0
@@ -67,6 +65,40 @@ func maxProfit(prices []int) int {
 	return p
 }
 
+// O(N) time, O(1) space solution, see:
+// https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/discuss/39615/My-explanation-for-O(N)-solution!
+// https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/discuss/149383/Easy-DP-solution-using-state-machine-O(n)-time-complexity-O(1)-space-complexity
+func maxProfitOnO1(prices []int) int {
+    if len(prices)==0 {
+    	return 0
+	}
+	// the left part max, right part max
+    buy1, buy2 := 0x7fffffff, 0x7fffffff
+    sell1, sell2 := 0, 0
+    for _, v := range prices {
+    	buy1 = min(buy1, v)
+    	sell1 = max(sell1, v-buy1)
+    	buy2 = min(buy2, v-sell1)
+    	sell2 = max(sell2, v-buy2)
+    	fmt.Println(v, buy1, sell1, buy2, sell2)
+    }
+    return sell2
+}
+
+func max(a, b int) int {
+	if a>b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a<b {
+		return a
+	}
+	return b
+}
+
 func main() {
 	fmt.Println(maxProfit([]int{3,3,5,0,0,3,1,4}))
 	fmt.Println(maxProfit([]int{1,2,3,4,5}))
@@ -74,4 +106,11 @@ func main() {
 	fmt.Println(maxProfit([]int{6,1,3,2,4,7}))
 	fmt.Println(maxProfit([]int{1,2,4,2,5,7,2,4,9,0}))
 	fmt.Println(maxProfit([]int{11,4,1,12,7,13,15,9,2,8,3,5,10,14,6,0}))
+
+	fmt.Println(maxProfitOnO1([]int{3,3,5,0,2,3,1,4}))
+	fmt.Println(maxProfitOnO1([]int{1,2,3,4,5}))
+	fmt.Println(maxProfitOnO1([]int{7,6,4,3,1}))
+	fmt.Println(maxProfitOnO1([]int{6,1,3,2,4,7}))
+	fmt.Println(maxProfitOnO1([]int{1,2,4,2,5,7,2,4,9,0}))
+	fmt.Println(maxProfitOnO1([]int{11,4,1,12,7,13,15,9,2,8,3,5,10,14,6,0}))
 }
