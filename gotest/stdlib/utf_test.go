@@ -76,29 +76,42 @@ func TestUpperMark(t *testing.T) {
 
 func TestUniCode(t *testing.T) {
 	/*
-	[]byte("😀☯商ñA") return utf8 byte[]     '0x f09f9880e298afe59586c3b141'
-	[]rune("😀☯商ñA") return unicode int32[] {128512, 9775, 21830, 241, 65}
-	   +------+---------------------+------------+------------+
-	   | char |   unicode           |  utf8      |  utf16     |
-	   +------+---------------------+------------+------------+
-	   | 😀   |   128512 (U+1f660)  |  f09f9880  |  d83dde00  |
-	   | ☯    |   9775   (U+262F)   |  e298af    |  262f      |
-	   | 商   |   21830  (U+5546)   |  e59586    |  5546      |
-	   | ñ    |   241    (U+00F1)   |  c3b1      |  00f1      |
-	   | A    |   65     (U+0041)   |  41        |  0041      |
-	   +------+---------------------+------------+------------+ */
+		[]byte("😀☯商ñA") return utf8 byte[]     '0x f09f9880e298afe59586c3b141'
+		[]rune("😀☯商ñA") return unicode int32[] {128512, 9775, 21830, 241, 65}
+		   +------+---------------------+------------+------------+
+		   | char |   unicode           |  utf8      |  utf16     |
+		   +------+---------------------+------------+------------+
+		   | 😀   |   128512 (U+1f660)  |  f09f9880  |  d83dde00  |
+		   | ☯    |   9775   (U+262F)   |  e298af    |  262f      |
+		   | 商   |   21830  (U+5546)   |  e59586    |  5546      |
+		   | ñ    |   241    (U+00F1)   |  c3b1      |  00f1      |
+		   | A    |   65     (U+0041)   |  41        |  0041      |
+		   +------+---------------------+------------+------------+ */
 	for _, a := range []rune{128512, 9775, 21830, 241, 65} {
 		s := string(a)
 		fmt.Println(s, hex.EncodeToString([]byte(s)))
 	}
 
 	// len(string) is the underlying utf8 bytes len
-	b := "\xf0\x9f\x98\x80\xe2\x98\xaf\xe5\x95\x86\xc3\xb1\x41"  // "𐌡໔加ñA"
+	b := "\xf0\x9f\x98\x80\xe2\x98\xaf\xe5\x95\x86\xc3\xb1\x41" // "𐌡໔加ñA"
 	// when str is transferred to []rune, the number is the number of characters
 	c := []rune(b)
 	fmt.Println(b, len(b), len(c)) // 13, 5
-	for _, ch := range b {         // range string is to range []rune
-		fmt.Println(ch, strconv.FormatInt(int64(ch), 16))
+
+	// range string is rune-based, though len(b)=13, but "for range b" loops 5 times
+	for i, ch := range b { // i is the start byte index of a character
+		fmt.Println(i, ch, strconv.FormatInt(int64(ch), 16))
+		// result:
+		// 0   128512  1f600
+		// 4   9775    262f
+		// 7   21830   5546
+		// 10  241     f1
+		// 12  65      41
+		// it means: b[0...3]=rune[0]=𐌡, b[4...6]=rune[1]=໔,
+		// b[7...9]=rune[2]=加, b[10...11]=rune[3]=ñ, b[12]=rune[4]=A"
+	}
+	for range b {
+		// loop 5 times
 	}
 
 	// "😀☯商ñA" in utf16: d83dde00 262f 5546 00f1 0041
@@ -128,22 +141,22 @@ func TestUnicode_Utf8(t *testing.T) {
 	rune, size := utf8.DecodeLastRune([]byte{41, 226, 152, 175})
 	fmt.Println(rune, size, string(rune))
 	rune, size = utf8.DecodeLastRune([]byte{41, 226, 66, 175})
-	fmt.Println(rune, rune==utf8.RuneError, size, string(rune))
+	fmt.Println(rune, rune == utf8.RuneError, size, string(rune))
 
 	rune, size = utf8.DecodeLastRuneInString(string([]byte{41, 226, 152, 175}))
 	fmt.Println(rune, size, string(rune))
 	rune, size = utf8.DecodeLastRuneInString(string([]byte{41, 226, 66, 175}))
-	fmt.Println(rune, rune==utf8.RuneError, size, string(rune))
+	fmt.Println(rune, rune == utf8.RuneError, size, string(rune))
 
 	rune, size = utf8.DecodeRune([]byte{226, 152, 175, 68})
 	fmt.Println(rune, size, string(rune))
 	rune, size = utf8.DecodeRune([]byte{226, 66, 175, 68})
-	fmt.Println(rune, rune==utf8.RuneError, size, string(rune))
+	fmt.Println(rune, rune == utf8.RuneError, size, string(rune))
 
 	rune, size = utf8.DecodeRuneInString(string([]byte{226, 152, 175, 68}))
 	fmt.Println(rune, size, string(rune))
 	rune, size = utf8.DecodeRuneInString(string([]byte{226, 66, 175, 68}))
-	fmt.Println(rune, rune==utf8.RuneError, size, string(rune))
+	fmt.Println(rune, rune == utf8.RuneError, size, string(rune))
 	fmt.Println()
 
 	// write a rune in utf8 encoding in bytes
@@ -166,7 +179,6 @@ func TestUnicode_Utf8(t *testing.T) {
 	fmt.Println('ñ', utf8.RuneLen('ñ'))
 	fmt.Println()
 }
-
 
 func TestUnicode_Utf16(t *testing.T) {
 	/*
