@@ -23,7 +23,7 @@ import "fmt"
 //   1 <= nums.length <= 10⁵
 //   1 <= nums[i] <= 10⁹
 
-https://leetcode.com/problems/steps-to-make-array-non-decreasing/discuss/2085864/JavaC%2B%2BPython-Stack-%2B-DP-%2B-Explanation-%2B-Poem
+// https://leetcode.com/problems/steps-to-make-array-non-decreasing/discuss/2085864/JavaC%2B%2BPython-Stack-%2B-DP-%2B-Explanation-%2B-Poem
 func totalSteps(nums []int) int {
 	ans := 0
 	var stack []int
